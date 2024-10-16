@@ -1,0 +1,240 @@
+---
+title: "Lotka Volterra Simulations for 2 particle system"
+author: "Carlos Olivares"
+date: "10/3/2024"
+output:
+  html_document:
+    code_folding: hide
+    toc: TRUE
+    number_sections: TRUE
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message=FALSE, warning=FALSE, cache=TRUE, collapse = TRUE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+theme_ceor <-theme_bw() +
+  # theme(legend.position = "none")+
+  theme(
+    plot.title = element_text(size = 24,hjust=-0.03),
+    axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(),
+    axis.text=element_text(size=16),
+    axis.title=element_text(size=18),
+    axis.line.x = element_line(size = 0.5, linetype = "solid", colour = "black"),
+    axis.line.y = element_line(size = 0.5, linetype = "solid", colour = "black")
+  )
+
+
+```
+
+
+
+# Objective
+
+Make simulations of a lotka-volterra system, considering for N species.
+ - Analyze the effect on the number of interactions
+ - Stability issues
+ - Take already inferred parameters from other papers for a stability check.
+ - I want to explore the stability and also what is the temporal evolution of the species.
+ - 
+
+# Lotka-Volterra
+
+
+```{r}
+# anscombe
+# anscombe %>%
+#   pivot_longer(
+#     everything(),
+#     cols_vary = "slowest",
+#     names_to = c(".value", "set"),
+#     names_pattern = "(.)(.)"
+#   )
+
+```
+
+
+## Interaction Matrix
+
+```{r}
+# install.packages("reshape2")
+# Load the ggplot2 package
+library(ggplot2)
+library(reshape2)
+
+# Example matrix
+# mat <- matrix(runif(100), nrow = 10, ncol = 10)
+fln_interactions_mat <- "GLV_Simulations/SimpleGLV/interaction_matrix_N_2.mat"
+
+# mat_interactions <- read.csv(fln_interactions_mat, header = FALSE) %>% 
+#   as.matrix()
+
+mat_interactions <- read.csv(fln_interactions_mat, header = FALSE) %>% as_tibble(.name_repair = ~as.character(seq_along(.))) %>% as.matrix()
+
+
+# Convert matrix to data frame
+mat_df <- melt(mat_interactions)
+
+# Plot using ggplot2
+lbl_title <- "" # "Interaction Matrix"
+lbl_x <- "Species"
+lbl_y <- "Species"
+ggplot(mat_df, aes(Var2, Var1, fill = value)) +
+  geom_tile(color = "white") +  # Plot tiles
+  geom_text(aes(label = round(value, 1)), color = "black") +  # Add value text
+  scale_fill_gradient(low = "white", high = "blue") +
+  labs(title = lbl_title, x = lbl_x, y = lbl_y) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  coord_fixed() +
+  scale_y_reverse() +  # Flip the y-axis for intuitive plotting
+  theme_ceor
+```
+
+
+
+```{r}
+
+eigen_mat_interactions <- eigen(mat_interactions)
+
+# eigen_mat_interactions$vectors[,1]**2 %>% sum()
+```
+
+
+## Eigen values
+
+
+```{r}
+
+# Calculate eigenvectors
+eigen_mat_interactions <- eigen(mat_interactions)
+eigen_mat_interactions_vectors <- eigen_mat_interactions$vectors
+
+# Prepare data for plotting
+# Create a data frame with origin (0, 0) and the end points of the eigenvectors
+unitary_vectors <- data.frame(
+  x_start = rep(0, ncol(eigen_mat_interactions_vectors)),  # Start x-coordinates (origin)
+  y_start = rep(0, ncol(eigen_mat_interactions_vectors)),  # Start y-coordinates (origin)
+  x_end = eigen_mat_interactions_vectors[1, ],              # End x-coordinates (eigenvectors)
+  y_end = eigen_mat_interactions_vectors[2, ]               # End y-coordinates (eigenvectors)
+)
+
+r <- 1  # radius
+theta <- seq(0, 2 * pi, length.out = 100)  # angle from 0 to 2*pi
+circle_data <- data.frame(
+    x = r * cos(theta),
+    y = r * sin(theta)
+  )
+
+lbl_title <- ""
+lbl_x <- ""
+lbl_y <- ""
+# Plot using ggplot2
+ggplot(unitary_vectors) +
+  geom_segment(aes(x = x_start, y = y_start, xend = x_end, yend = y_end), 
+               arrow = arrow(length = unit(0.2, "inches")), color = "black") +
+  geom_path(data=circle_data, aes(x = x, y = y), color = "blue", alpha=0.5, linetype='dashed', size = 1) +
+  # coord_cartesian(
+  #   
+  # ) +
+  labs(title = lbl_title, x = lbl_x, y = lbl_x) +
+  geom_text(aes(x = x_end, y = y_end, label = paste0("v", 1:ncol(eigen_mat_interactions_vectors))), vjust = -1.5) +
+  coord_fixed() + 
+  theme_ceor
+```
+
+
+
+## Trajectories
+
+```{r, fig.height=6, fig.width=8}
+df_trajectories <- read.csv("GLV_Simulations/SimpleGLV/df_trajectories_N_2.csv")
+df_trajectories %>% 
+  pivot_longer(cols = contains("Species"), names_to = "id_species", values_to = "AbsAbun") %>% 
+  dplyr::mutate(id_species = str_replace_all(id_species, "Species.", "")) %>% 
+  dplyr::mutate(id_species = as.integer(id_species)) %>% 
+  ggplot() +
+  geom_line(aes(x=Time, y=AbsAbun, color=id_species, group=id_species)) +
+  theme_ceor
+
+```
+
+
+
+## Diversity
+
+
+```{r}
+df_diversity <- read.csv("GLV_Simulations/SimpleGLV/df_diversity_N_2.csv")
+df_diversity %>% 
+  ggplot(aes(x=time, y=Shannon))+
+  # geom_line(data=DF_DIVERSITY, aes(x=V1, y=V3)) +
+  geom_line() +
+  # geom_line(aes(y=V2), color = 'red') + 
+  # geom_point() +
+  coord_cartesian(
+    x=c(0,100)
+  ) +
+  # scale_y_log10()  +
+  theme_ceor
+```
+
+
+
+```{r, fig.height=8, fig.width=16}
+# # fln_csv <- "GLV_Simulations/output.csv"
+# fln_csv <- "GLV_Simulations/SimpleGLV/data.csv"
+# 
+# df_simul <- read.csv(fln_csv, sep = '\t')
+# df_species_AbsAbun <- df_simul %>% 
+#   dplyr::select(-X) %>% 
+#   pivot_longer(
+#     cols = contains("Species."),
+#     names_to = "Species",
+#     values_to = "Abundance"
+#     # cols_vary = "slowest",
+#     # names_to = c(".value", "set"),
+#     # names_pattern = "(.)(.)"
+#   ) %>% 
+#   dplyr::mutate(Species = as.integer( str_replace_all(Species, "Species.", "") ) )
+#   # head(100) %>%
+# 
+# 
+# df_species_AbsAbun %>%
+#   group_by(Time) %>% 
+#   summarise(
+#     
+#   )
+# 
+# plt_tmp <- df_species_AbsAbun %>% 
+#   ggplot(aes(x=Time, y=Abundance, color=as.factor(Species) ) ) +
+#   geom_line(data=DF_DIVERSITY, aes(x=V1, y=V3), inherit.aes = FALSE, color='black') +
+#   geom_line() +
+#   # geom_point() +
+#   scale_y_log10() +
+#   coord_cartesian(
+#     xlim = c(0, 100)
+#   ) +
+#   theme_ceor
+# 
+# plotly::ggplotly(plt_tmp)
+
+```
+
+
+
+
+
+
+
+
+

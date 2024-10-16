@@ -1,0 +1,253 @@
+---
+title: "LV_analysis"
+author: "Carlos Olivares"
+date: "3/7/2023"
+output: html_document
+---
+
+```{r echo=FALSE}
+library(tidyverse)
+library(deSolve)
+library("RColorBrewer")
+```
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## One Family equation per taxa
+Considering only one family that not interact with other bacterial families following the equation
+
+$$ \frac{d}{dt} N_{k} = \alpha_k N_{k}  - \mu_{k,k} N_{k}^2 $$
+This equation shows a competition between a linear and a quadratic term and considering $\alpha_k = 20$ and $\mu_{k,k} = 2 $ and $N_{k}^{*} = 10$ in growth rate, 
+```{r}
+ggplot() + 
+  geom_function(fun= function(x) 20*x) + 
+  geom_function(fun= function(x) 2*x^2) + 
+  theme_bw() +
+  xlim(0, 20)
+```
+
+in which the fix point is $N_{k}^{*} = \alpha_{k}/ \mu_{k,k}$. 
+
+Particularly this equation has an analytical solution
+
+$$ N_{k} = \frac{ \alpha_{k} N_{k}^{0} \exp(\alpha t) }{\alpha_k + \mu_{k,k} N_{k}^{0}  \left[\exp(\alpha_{k} t) - 1 \right] } $$
+Considering the same fix point $N_{k}^{*} $ but with 2 different initial conditions we get the following behavoir
+
+```{r}
+f_Nk_sol <- function(t, Nk0, alpha_k, mu_kk){
+  return( alpha_k*Nk0*exp(alpha_k*t) / (alpha_k + mu_kk*Nk0*(exp(alpha_k*t) -1 ) ) )
+}
+
+colores_list <- brewer.pal(n = 8, name = "RdBu")
+ggplot() +
+  geom_function(fun=f_Nk_sol, args=list(Nk0=150, alpha_k=400, mu_kk=4), col=colores_list[1]) +
+  geom_function(fun=f_Nk_sol, args=list(Nk0=150, alpha_k=200, mu_kk=2), col=colores_list[2]) +
+  geom_function(fun=f_Nk_sol, args=list(Nk0=150, alpha_k=100, mu_kk=1), col=colores_list[3]) +
+  geom_function(fun=f_Nk_sol, args=list(Nk0= 50, alpha_k=400, mu_kk=4), col=colores_list[4]) +
+  geom_function(fun=f_Nk_sol, args=list(Nk0= 50, alpha_k=200, mu_kk=2), col=colores_list[5]) +
+  geom_function(fun=f_Nk_sol, args=list(Nk0= 50, alpha_k=100, mu_kk=1), col=colores_list[6]) +
+  geom_function(fun=f_Nk_sol, args=list(Nk0=150, alpha_k=1,  mu_kk=0.01), col=colores_list[7]) +
+  theme_bw()
+```
+hola hola
+```{r}
+f_Nk_sol_02 <- function(t, Nk0, alpha_k, mu_kk){
+  return( alpha_k*Nk0 / (alpha_k*exp(-alpha_k*t) + mu_kk*Nk0*(1 - exp(-alpha_k*t) ) ) )
+}
+
+
+colores_list <- brewer.pal(n = 8, name = "RdBu")
+ggplot() +
+  geom_function(fun=f_Nk_sol_02, args=list(Nk0=150, alpha_k=1000, mu_kk=10), col=colores_list[1]) +
+  geom_function(fun=f_Nk_sol_02, args=list(Nk0=150, alpha_k=200, mu_kk=2), col=colores_list[2]) +
+  geom_function(fun=f_Nk_sol_02, args=list(Nk0=150, alpha_k=100, mu_kk=1), col=colores_list[3]) +
+  geom_function(fun=f_Nk_sol_02, args=list(Nk0= 50, alpha_k=400, mu_kk=4), col=colores_list[4]) +
+  geom_function(fun=f_Nk_sol_02, args=list(Nk0= 50, alpha_k=200, mu_kk=2), col=colores_list[5]) +
+  geom_function(fun=f_Nk_sol_02, args=list(Nk0= 50, alpha_k=100, mu_kk=1), col=colores_list[6]) +
+  geom_function(fun=f_Nk_sol_02, args=list(Nk0=150, alpha_k=1,  mu_kk=0.01), col=colores_list[7]) +
+  theme_bw()
+```
+
+Parameters to show
+```{r, echo=FALSE}
+Nk_fp <- 1e5
+tbl_tmp <- tibble(
+  alpha_k = c(100, 10.0, 1.00, 1e-1,   1e-2)
+  # mu_kk   = c(  1,  0.1, 0.01, 1e-3, 1e-4)
+  ) %>% mutate(
+    mu_kk = alpha_k / Nk_fp
+  )
+
+tbl_params <- rbind( tbl_tmp %>% mutate(Nk0=1.5e5), tbl_tmp %>% mutate(Nk0=0.5e5) )
+tbl_params
+```
+
+
+```{r, echo=FALSE}
+f_Nk_sol <- function(t, Nk0, alpha_k, mu_kk){
+  return( alpha_k*Nk0*exp(alpha_k*t) / (alpha_k + mu_kk*Nk0*(exp(alpha_k*t) -1 ) ) )
+}
+
+f_Nk_sol_02 <- function(t, Nk0, alpha_k, mu_kk){
+  
+  return( alpha_k*Nk0 / (alpha_k*exp(-alpha_k*t) + mu_kk*Nk0*(1 - exp(-alpha_k*t) ) ) )
+}
+
+tt <- seq(0, 200, 0.1)
+
+tbl_analytical <- tbl_params %>% 
+  group_by(alpha_k, mu_kk, Nk0) %>% 
+  mutate(
+    data = list(
+      data.frame(
+      time = tt,
+      Nk = f_Nk_sol_02(tt, Nk0, alpha_k, mu_kk)
+      ) 
+    ) ) %>% 
+  unnest(cols = c("data"))
+tbl_analytical
+
+```
+
+```{r, echo=FALSE}
+p <- ggplot(data=tbl_analytical, aes(x=time, y=Nk, color=as.factor(alpha_k) )) + 
+  geom_line() + 
+  theme_bw() +
+  facet_wrap(~Nk0)
+p
+```
+
+Considering only one family we get the 
+
+$$ \frac{d}{dt} N_{k} = \alpha_k N_{k}  - \mu_{k,k} N_{k}^2 $$
+Now show how this change under different parameters
+
+
+```{r}
+tbl_params
+```
+
+
+```{r}
+
+f_dNkdt_1Fam_NoAb <- function(t, Nk, parameters){
+  with(
+    as.list(c(Nk, parameters)), {
+      dNkdt <- alpha_k*Nk - mu_k_k*Nk*Nk
+      list(dNkdt)
+    }
+  )
+}
+
+Nk0 <- 1.5*Nk_fp
+times <- seq(0, 100, by = 0.1)
+
+alpha_k <- 1e-1
+mu_k_k  <- alpha_k/Nk_fp
+
+ini_cond <- c(Nk=Nk0)
+
+parameters <- list(alpha_k=alpha_k, mu_k_k=mu_k_k)
+
+out <- ode(y = ini_cond, times = times,
+           func = f_dNkdt_1Fam_NoAb, parms = parameters,
+           method = "ode45")
+# out
+data_Nk <- tibble(time = out[,1], Nk_t = out[,2] )
+ggplot(data=data_Nk, aes(x=time, y=Nk_t)) + geom_line()
+```
+
+
+
+
+```{r}
+
+f_dNkdt_1Fam_NoAb <- function(t, Nk, parameters){
+  with(
+    as.list(c(Nk, parameters)), {
+      dNkdt <- alpha_k*Nk - mu_k_k*Nk*Nk
+      list(dNkdt)
+    }
+  )
+}
+
+f_Nk_num_1Fam_NoAb <- function(times, Nk0, alpha_k, mu_k_k){
+  ini_cond <- c(Nk=Nk0)
+  parameters <- list(alpha_k=alpha_k, mu_k_k=mu_k_k)
+  out <- ode(y = ini_cond, times = times,
+             func = f_dNkdt_1Fam_NoAb, parms = parameters,
+             method = "ode45")
+  data_Nk <- tibble(time = out[,1], Nk = out[,2] )
+  return(data_Nk)
+}
+
+# Nk0 <- 2e5
+# times <- seq(0, 100, by = 0.1)
+# 
+# alpha_k <- 1e-1
+# mu_k_k  <- 1e-6
+
+f_Nk_num_1Fam_NoAb(tt, 2e5, 1e-1, 1e-6)
+
+tbl_numeric <- tbl_params %>% 
+  group_by(alpha_k, mu_kk, Nk0) %>% 
+  mutate(
+    data = list(
+      f_Nk_num_1Fam_NoAb(tt, Nk0, alpha_k, mu_kk)
+    ) ) %>% 
+  unnest(cols = c("data"))
+tbl_numeric
+
+
+```
+
+```{r}
+p <- ggplot(data=tbl_numeric, aes(x=time, y=Nk, color=as.factor(alpha_k) )) + 
+  geom_line() + 
+  theme_bw() +
+  facet_wrap(~Nk0)
+p
+
+```
+
+## One Family with Interaction with Antibiotic
+
+```{r}
+
+f_dNkdt_1Fam_Ab_lin_Cf0 <- function(t, Nk, parameters){
+  with(
+    as.list(c(Nk, parameters)), {
+      dNkdt <- alpha_k*Nk - mu_k_k*Nk*Nk - gamma_k*Cf0*Nk
+      list(dNkdt)
+    }
+  )
+}
+
+
+f_Nk_num_1Fam_NoAb <- function(times, Nk0, alpha_k, mu_k_k, gamma_k, Cf0){
+  ini_cond <- c(Nk=Nk0)
+  parameters <- list(alpha_k=alpha_k, mu_k_k=mu_k_k)
+  out <- ode(y = ini_cond, times = times,
+             func = f_dNkdt_1Fam_Ab_lin_Cf0, parms = parameters,
+             method = "ode45")
+  data_Nk <- tibble(time = out[,1], Nk = out[,2] )
+  return(data_Nk)
+}
+
+```
+
+
+```{r}
+ve <- function(x) {
+  exp(-0.03*log(10)*x)
+}
+ggplot() + 
+  geom_function(fun=ve) + 
+  xlim(0, 150) + 
+  scale_y_log10()
+```
+
