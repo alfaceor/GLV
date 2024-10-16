@@ -9,6 +9,12 @@
 #include <sstream>
 #include <numeric>
 #include <cmath>
+#include <variant> // For std::variant
+#include <type_traits> // For std::holds_alternative
+
+
+// Define a variant that can hold either double or string values in the vectors
+using ColumnData = std::variant<std::vector<double>, std::vector<std::string>>;
 
 // Function to open the file and write the header
 std::ofstream get_of_trajectories(const std::string& filename, size_t AbsAbun_size, const std::string& sep = ",");
@@ -30,6 +36,9 @@ double calc_ShannonIndex(const std::vector<double>& relativeAbundances);
 
 // Function to read a CSV file with headers and save each column independently
 std::map<std::string, std::vector<double>> readCSVWithHeaders(const std::string& fileName);
+
+// Function to read a CSV file with headers and save each column independently
+std::map<std::string, ColumnData> readCSVWithHeaders02(const std::string& fileName);
 
 // Function to read a vector of vectors of doubles from a CSV file
 std::vector<std::vector<double>> readMatrixFromCSVFile(const std::string& fileName);

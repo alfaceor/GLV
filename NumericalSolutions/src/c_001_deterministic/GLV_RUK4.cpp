@@ -20,17 +20,18 @@ int main() {
     std::string csvsep = ",";
 
     // Inputs
-    std::string fln_species = "species_N_3.csv";
-    std::string fln_interactions = "interaction_matrix_N_3.mat";
+    std::string fln_species = "species_N_7.csv";
+    std::string fln_interactions = "interaction_matrix_N_7.mat";
 
     // Outputs
-    std::string fln_diversity = "df_diversity_N_3.csv";
-    std::string fln_trajectories = "df_trajectories_N_3.csv";
+    std::string fln_diversity = "df_diversity_N_7.csv";
+    std::string fln_trajectories = "df_trajectories_N_7.csv";
 
 
     // Loading data
     // Call the function to read the CSV and store each column independently
     std::map<std::string, std::vector<double>> dataColumns = readCSVWithHeaders(fln_species);
+    // std::map<std::string, ColumnData> dataColumns = readCSVWithHeaders02(fln_species);
 
     // Interaction matrix (eps, NxN matrix)
     std::vector< std::vector<double> > eps = readMatrixFromCSVFile(fln_interactions);

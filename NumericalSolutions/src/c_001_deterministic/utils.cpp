@@ -104,6 +104,7 @@ double calc_ShannonIndex(const std::vector<double>& relativeAbundances) {
 }
 
 // Function to read a CSV file with headers and save each column independently
+// FIXME: ADD csvsep as default ',' 
 std::map<std::string, std::vector<double>> readCSVWithHeaders(const std::string& fileName) {
     std::ifstream file(fileName);
     std::map<std::string, std::vector<double>> dataColumns;
@@ -148,6 +149,68 @@ std::map<std::string, std::vector<double>> readCSVWithHeaders(const std::string&
 }
 
 
+// FIXME: ADD csvsep as default ',' 
+std::map<std::string, ColumnData> readCSVWithHeaders02(const std::string& fileName) {
+    std::ifstream file(fileName);
+    std::map<std::string, ColumnData> dataColumns;
+
+    // Check if the file was opened successfully
+    if (!file) {
+        std::cerr << "Error opening file: " << fileName << std::endl;
+        return dataColumns; // Return empty map if file can't be opened
+    }
+
+    std::string line;
+
+    // Read the header line
+    if (std::getline(file, line)) {
+        std::stringstream ss(line);
+        std::string header;
+
+        // Read each header and initialize an empty vector for it
+        while (std::getline(ss, header, ',')) {
+            // Assume all columns are strings at first
+            dataColumns[header] = std::vector<std::string>();
+        }
+    }
+
+    // Read the remaining lines (the data)
+    while (std::getline(file, line)) {
+        std::stringstream ss(line);
+        std::string value;
+
+        // Iterate over the map to access headers and fill columns
+        auto it = dataColumns.begin();
+        while (std::getline(ss, value, ',')) {
+            // Check if this column already contains double data
+            if (std::holds_alternative<std::vector<double>>(it->second)) {
+                try {
+                    // Try converting the value to double and adding to the column
+                    std::get<std::vector<double>>(it->second).push_back(std::stod(value));
+                } catch (const std::invalid_argument& e) {
+                    // If conversion fails, print a message and exit
+                    std::cerr << "Error: Non-numeric value '" << value << "' in numeric column '" << it->first << "'\n";
+                    return dataColumns;
+                }
+            } else {
+                // Add string values to the string vector
+                std::get<std::vector<std::string>>(it->second).push_back(value);
+            }
+
+            ++it; // Move to the next column
+            if (it == dataColumns.end()) {
+                break;
+            }
+        }
+    }
+
+    // Close the file
+    file.close();
+
+    return dataColumns;
+}
+
+// Function to read a CSV file with headers and save each column independently with string as columns too.
 // Function to read a vector of vectors of doubles from a CSV file
 std::vector<std::vector<double>> readMatrixFromCSVFile(const std::string& fileName) {
     std::ifstream file(fileName);

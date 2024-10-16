@@ -99,6 +99,7 @@ ggplot(mat_df, aes(Var2, Var1, fill = value)) +
   labs(title = lbl_title, x = lbl_x, y = lbl_y) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_distiller(palette = "Spectral") +
   coord_fixed() +
   scale_y_reverse() +  # Flip the y-axis for intuitive plotting
   theme_ceor
@@ -109,20 +110,24 @@ ggplot(mat_df, aes(Var2, Var1, fill = value)) +
 ## Species Parameters
 
 ```{r}
-fln_species <- "GLV_Simulations/SimpleGLV/species_N_3.csv"
+fln_species <- "c_001_deterministic/species_N_7.csv"
 df_species <- read.csv(fln_species)
 v_tmp <- df_species %>% pull(AbsAbun) 
--mat_interactions %*% v_tmp
+mat_interactions %*% v_tmp
 ```
 
 ```{r}
 t(mat_interactions) %*% v_tmp
 
 ```
+```{r}
+v_tmp
+```
 
 
 ```{r}
-mat_interactions
+writey.csv( t(mat_interactions) )
+
 ```
 
 
@@ -176,18 +181,27 @@ ggplot(unitary_vectors) +
   theme_ceor
 ```
 
-
-
 ## Trajectories
 
+
+```{r}
+v_xlim <- c(0, 20)
+```
+
+
+
+
 ```{r, fig.height=6, fig.width=8}
-df_trajectories <- read.csv("GLV_Simulations/SimpleGLV/df_trajectories_N_3.csv")
+df_trajectories <- read.csv("c_001_deterministic/df_trajectories_N_7.csv")
 df_trajectories %>% 
   pivot_longer(cols = contains("Species"), names_to = "id_species", values_to = "AbsAbun") %>% 
   dplyr::mutate(id_species = str_replace_all(id_species, "Species.", "")) %>% 
   dplyr::mutate(id_species = as.integer(id_species)) %>% 
   ggplot() +
   geom_line(aes(x=Time, y=AbsAbun, color=id_species, group=id_species)) +
+  coord_cartesian(
+    xlim = v_xlim
+  ) +
   theme_ceor
 
 ```
@@ -198,7 +212,27 @@ df_trajectories %>%
 
 
 ```{r}
-df_diversity <- read.csv("GLV_Simulations/SimpleGLV/df_diversity_N_3.csv")
+df_diversity <- read.csv("c_001_deterministic/df_diversity_N_7.csv")
+```
+
+### AbsAbun
+
+```{r}
+df_diversity %>% 
+  ggplot(aes(x=time, y=total_AbsAbun))+
+  # geom_line(data=DF_DIVERSITY, aes(x=V1, y=V3)) +
+  geom_line() +
+  coord_cartesian(
+    xlim = v_xlim
+  ) +
+  theme_ceor
+
+```
+
+
+### Shannon
+```{r}
+
 df_diversity %>% 
   ggplot(aes(x=time, y=Shannon))+
   # geom_line(data=DF_DIVERSITY, aes(x=V1, y=V3)) +
@@ -206,7 +240,7 @@ df_diversity %>%
   # geom_line(aes(y=V2), color = 'red') + 
   # geom_point() +
   coord_cartesian(
-    x=c(0,100)
+    xlim = v_xlim
   ) +
   # scale_y_log10()  +
   theme_ceor
@@ -253,12 +287,3 @@ df_diversity %>%
 # plotly::ggplotly(plt_tmp)
 
 ```
-
-
-
-
-
-
-
-
-
