@@ -67,6 +67,83 @@ Make simulations of a lotka-volterra system, considering for N species.
 
 ## Interaction Matrix
 
+### Jinju's values
+
+In jinju's paper there are not new values for considering $10^{-9} CFU/g$
+
+
+```{r}
+df_species_N_7_Jinjus <- read.csv("c_001_deterministic/species_N_7.csv_Jinjus")
+df_species_N_7_Jinjus_02 <- df_species_N_7_Jinjus %>% 
+  dplyr::mutate(AbsAbun=10^log10_AbsAbun) %>% 
+  dplyr::mutate(AbsAbun_1ep9 = 10^(log10_AbsAbun-9) )
+
+df_species_N_7_Jinjus_02 %>% 
+  dplyr::select(contains("AbsAbun")) %>% 
+  flextable::flextable()
+```
+
+
+```{r}
+v_AbsAbun_1em9 <- df_species_N_7_Jinjus_02 %>% pull(AbsAbun_1ep9)
+v_AbsAbun_1em9
+```
+
+
+```{r}
+fln_interactions_mat_jinjuspaper <- "c_001_deterministic/interaction_matrix_N_7.mat_Jinjus"
+df_interactions_mat_jinjuspaper <- read.csv(fln_interactions_mat_jinjuspaper)
+df_interactions_mat_jinjuspaper
+```
+
+
+```{r}
+mat_interactions_mat_jinjuspaper <- df_interactions_mat_jinjuspaper %>% dplyr::select(-Species) %>% as.matrix()
+colnames(mat_interactions_mat_jinjuspaper) <- NULL
+mat_interactions_mat_jinjuspaper[is.na(mat_interactions_mat_jinjuspaper)] <- 0
+mat_interactions_mat_jinjuspaper
+
+mat_df_jinjuspaper <- melt(mat_interactions_mat_jinjuspaper)
+
+# Plot using ggplot2
+lbl_title <- "" # "Interaction Matrix"
+lbl_x <- "Species"
+lbl_y <- "Species"
+ggplot(mat_df_jinjuspaper, aes(Var2, Var1, fill = value)) +
+  geom_tile(color = "white") +  # Plot tiles
+  geom_text(aes(label = round(value, 1)), color = "black") +  # Add value text
+  scale_fill_gradient(low = "white", high = "blue") +
+  labs(title = lbl_title, x = lbl_x, y = lbl_y) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_distiller(palette = "Spectral") +
+  coord_fixed() +
+  scale_y_reverse() +  # Flip the y-axis for intuitive plotting
+  theme_ceor
+```
+
+
+
+
+
+```{r}
+# t(v_AbsAbun_1em9) %*% mat_interactions_mat_jinjuspaper[1,]
+```
+
+
+```{r}
+v_alpha_new <- -mat_interactions_mat_jinjuspaper %*% v_AbsAbun_1em9
+
+df_species_N_7_Jinjus_03 <- df_species_N_7_Jinjus_02 %>% 
+  dplyr::mutate(alpha = v_alpha_new) %>% 
+  dplyr::select(AbsAbun_1ep9, alpha, gamma)
+
+write.csv(df_species_N_7_Jinjus_03, file = "c_001_deterministic/df_species_N_7.csv")
+```
+
+
+
+
 I don't know what are the correct values for Jinju's paper, but looking at her supplmentary data I belive that there is a misconception in the unities I think I should consider that the unities in the inferred parameter are not 10^(-9) log10(CFU/g) but just 10^(-9) CFU/g
 
 
@@ -175,15 +252,12 @@ df_species %>%
 t(mat_interactions) %*% v_tmp
 
 ```
+
+
 ```{r}
 v_tmp
 ```
 
-
-```{r}
-writey.csv( t(mat_interactions) )
-
-```
 
 
 ```{r}
