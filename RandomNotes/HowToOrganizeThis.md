@@ -8,6 +8,7 @@ Here I'll add some comments about what I want to do
 - I would like to see if the distributions of bacteria could be in a way divided in subsystem, like the bacterias in surface of the gut and others in the bulk.
 - What papers are aligned with my research questions?
 - Which scientific community is aligned with my questions, I'm looking for something more applied like what clinitians are looking for or should I focus in a more theoretical description?
+- What would be the Fokker-Planck approach to this or maybe with in some master equation perhaps?
 
 ## How to organize the project?
 
