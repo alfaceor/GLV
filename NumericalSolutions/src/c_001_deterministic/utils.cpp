@@ -260,12 +260,10 @@ void lotka_volterra(const std::vector<double>& AbsAbun, std::vector<double>& dAb
 }
 
 
-
-
-
 // Runge-Kutta 4th order method for solving ODEs
-void rk4_step_lotka_volterra(std::vector<double>& AbsAbun, double t, double dt, const std::vector<double>& alpha,
-              const std::vector<std::vector<double>>& eps) {
+void rk4_step_lotka_volterra(std::vector<double>& AbsAbun, double t, double dt, 
+            const std::vector<double>& alpha,
+            const std::vector<std::vector<double>>& eps) {
     int n = AbsAbun.size();
     std::vector<double> k1(n), k2(n), k3(n), k4(n), AbsAbun_temp(n);
 
@@ -283,6 +281,54 @@ void rk4_step_lotka_volterra(std::vector<double>& AbsAbun, double t, double dt, 
     // k4 = f(AbsAbun + dt * k3, t + dt)
     for (int i = 0; i < n; i++) AbsAbun_temp[i] = AbsAbun[i] + dt * k3[i];
     lotka_volterra(AbsAbun_temp, k4, alpha, eps);
+
+    // Update AbsAbun using the RK4 formula
+    for (int i = 0; i < n; i++) {
+        AbsAbun[i] += dt / 6.0 * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]);
+    }
+}
+
+
+
+// Function to calculate the Lotka-Volterra equations for any number of species with a linear perturbation proportional to the species abundance
+void lotka_volterra_perturb_linear(const std::vector<double>& AbsAbun, std::vector<double>& dAbsAbun_dt, 
+                    const std::vector<double>& alpha, 
+                    const std::vector<std::vector<double>>& eps, 
+                    const std::vector<double>& gamma) {
+    int num_species = AbsAbun.size();
+    
+    for (int i = 0; i < num_species; i++) {
+        dAbsAbun_dt[i] = alpha[i] * AbsAbun[i] - gamma[i] * AbsAbun[i]; // logistic growth
+        for (int j = 0; j < num_species; j++) {
+            dAbsAbun_dt[i] += eps[i][j] * AbsAbun[i] * AbsAbun[j]; // Interaction term
+            // std::cout<< dAbsAbun_dt[i] << std::endl;
+        }
+    }
+}
+
+
+// Runge-Kutta 4th order method for solving ODEs for linear perturbation
+void rk4_step_lotka_volterra_perturb_linear(std::vector<double>& AbsAbun, double t, double dt, 
+            const std::vector<double>& alpha,
+            const std::vector<std::vector<double>>& eps,
+            const std::vector<double>& gamma) {
+    int n = AbsAbun.size();
+    std::vector<double> k1(n), k2(n), k3(n), k4(n), AbsAbun_temp(n);
+
+    // k1 = f(AbsAbun, t)
+    lotka_volterra_perturb_linear(AbsAbun, k1, alpha, eps, gamma);
+
+    // k2 = f(AbsAbun + dt/2 * k1, t + dt/2)
+    for (int i = 0; i < n; i++) AbsAbun_temp[i] = AbsAbun[i] + dt / 2.0 * k1[i];
+    lotka_volterra_perturb_linear(AbsAbun_temp, k2, alpha, eps, gamma);
+
+    // k3 = f(AbsAbun + dt/2 * k2, t + dt/2)
+    for (int i = 0; i < n; i++) AbsAbun_temp[i] = AbsAbun[i] + dt / 2.0 * k2[i];
+    lotka_volterra_perturb_linear(AbsAbun_temp, k3, alpha, eps, gamma);
+
+    // k4 = f(AbsAbun + dt * k3, t + dt)
+    for (int i = 0; i < n; i++) AbsAbun_temp[i] = AbsAbun[i] + dt * k3[i];
+    lotka_volterra_perturb_linear(AbsAbun_temp, k4, alpha, eps, gamma);
 
     // Update AbsAbun using the RK4 formula
     for (int i = 0; i < n; i++) {

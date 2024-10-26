@@ -7,9 +7,33 @@
 #include <string>
 #include <sstream>
 #include <numeric>
-
+#include <stdexcept>
 
 #include "utils.h"
+
+
+// Function to calculate the relative abundances
+// FIXME: look for the right definition of 
+double calc_bray_curtis_dissimilarity(const std::vector<double>& x, const std::vector<double>& y) {
+    if (x.size() != y.size()) {
+        throw std::invalid_argument("Vectors must be of the same length.");
+    }
+    
+    double numerator = 0.0;
+    double denominator = 0.0;
+    
+    for (size_t i = 0; i < x.size(); ++i) {
+        numerator += std::abs(x[i] - y[i]);
+        denominator += x[i] + y[i];
+    }
+    
+    if (denominator == 0.0) {
+        throw std::invalid_argument("Denominator is zero, cannot calculate Bray-Curtis dissimilarity.");
+    }
+    
+    return numerator / denominator;
+}
+
 
 
 int main() {
@@ -24,6 +48,7 @@ int main() {
     // Outputs
     std::string fln_diversity = "df_diversity_N_7.csv";
     std::string fln_trajectories = "df_trajectories_N_7.csv";
+    double t_perturbation = 10;
 
 
     // Loading data
@@ -36,6 +61,7 @@ int main() {
 
     // Initial populations of the species (Absolute Abundance)
     std::vector<double> AbsAbun = dataColumns["AbsAbun"];
+    std::vector<double> AbsAbun_0 = AbsAbun; // Reference to make calculations from initial distribution as reference.
 
     double dbl_total_AbsAbun = std::accumulate(AbsAbun.begin(), AbsAbun.end(), 0.0);
     std::cout << "dbl_total_AbsAbun: " << dbl_total_AbsAbun << std::endl;
@@ -45,6 +71,11 @@ int main() {
 
     // Growth rates for each species (alpha)
     std::vector<double> alpha = dataColumns["alpha"];
+
+    std::vector<double> gamma = dataColumns["dontknow"];
+    for (int i=0; i < AbsAbun.size(); i++){
+        std::cout << i << ": " << AbsAbun[i] << csvsep << alpha[i] << csvsep << gamma[i] << std::endl;
+    }
 
     // Input validations:
     // 1. The length of AbsAbun, alpha and all extra columns have the same number of and all bigger than 2
@@ -66,9 +97,10 @@ int main() {
     int steps = static_cast<int>(t_end / dt);
 
     std::ofstream of_diversity(fln_diversity);
-    of_diversity << "time" << csvsep << "total_AbsAbun" << csvsep << "Shannon" << "\n";
+    of_diversity << "time" << csvsep << "total_AbsAbun" << csvsep << "Shannon" << csvsep << "BrayCurtis" << "\n";
     
     double dbl_shannon = 0.0;
+    double dbl_bray_curtis = 0.0;
     // Time evolution
     for (int step = 0; step <= steps; ++step) {
         if (step % 10 == 0) { // Print every 10 steps for readability
@@ -84,13 +116,22 @@ int main() {
             dbl_total_AbsAbun = accumulate(AbsAbun.begin(), AbsAbun.end(), 0.0);
             RelAbun = calc_RelAbun(AbsAbun);
             dbl_shannon = calc_ShannonIndex(RelAbun);
+            try {
+                dbl_bray_curtis = calc_bray_curtis_dissimilarity(AbsAbun, AbsAbun_0);
+            } catch (const std::invalid_argument& e) {
+                std::cerr << "Error: " << e.what() << std::endl;
+            }
 
-            of_diversity << t << csvsep << dbl_total_AbsAbun<< csvsep << dbl_shannon << "\n";
+            of_diversity << t << csvsep << dbl_total_AbsAbun<< csvsep << dbl_shannon << csvsep << dbl_bray_curtis << "\n";
 
         }
         // Calculate Shannon
-
-        rk4_step_lotka_volterra(AbsAbun, t, dt, alpha, eps); // Advance the system by one time step
+        if (t> 0 & t < t_perturbation){
+            rk4_step_lotka_volterra_perturb_linear(AbsAbun, t, dt, alpha, eps, gamma); // Advance the system by one time step
+        }else{
+            rk4_step_lotka_volterra(AbsAbun, t, dt, alpha, eps); // Advance the system by one time step
+        }
+        
         t += dt;
     }
 

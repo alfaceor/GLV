@@ -45,10 +45,24 @@ std::vector<std::vector<double>> readMatrixFromCSVFile(const std::string& fileNa
 
 // Function to calculate the Lotka-Volterra equations for any number of species
 void lotka_volterra(const std::vector<double>& AbsAbun, std::vector<double>& dAbsAbun_dt, 
-                    const std::vector<double>& alpha, const std::vector<std::vector<double>>& eps);
+                    const std::vector<double>& alpha, 
+                    const std::vector<std::vector<double>>& eps);
 
 // Runge-Kutta 4th order method for solving ODEs
 void rk4_step_lotka_volterra(std::vector<double>& AbsAbun, double t, double dt, 
-                              const std::vector<double>& alpha, const std::vector<std::vector<double>>& eps);
+                              const std::vector<double>& alpha, 
+                              const std::vector<std::vector<double>>& eps);
+
+// Function to calculate the Lotka-Volterra equations for any number of species with a linear perturbation proportional to the species abundance
+void lotka_volterra_perturb_linear(const std::vector<double>& AbsAbun, std::vector<double>& dAbsAbun_dt, 
+            const std::vector<double>& alpha, 
+            const std::vector<std::vector<double>>& eps, 
+            const std::vector<double>& gamma);
+
+// Runge-Kutta 4th order method for solving ODEs for linear perturbation
+void rk4_step_lotka_volterra_perturb_linear(std::vector<double>& AbsAbun, double t, double dt, 
+            const std::vector<double>& alpha,
+            const std::vector<std::vector<double>>& eps,
+            const std::vector<double>& gamma);
 
 #endif // UTILS_H
