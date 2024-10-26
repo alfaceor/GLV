@@ -15,6 +15,8 @@ knitr::opts_chunk$set(echo = FALSE, message=FALSE, warning=FALSE, cache=TRUE, co
 
 ```{r}
 library(tidyverse)
+# library(ggplot2)
+library(reshape2)
 ```
 
 ```{r}
@@ -136,9 +138,10 @@ v_alpha_new <- -mat_interactions_mat_jinjuspaper %*% v_AbsAbun_1em9
 
 df_species_N_7_Jinjus_03 <- df_species_N_7_Jinjus_02 %>% 
   dplyr::mutate(alpha = v_alpha_new) %>% 
-  dplyr::select(AbsAbun_1ep9, alpha, gamma)
+  dplyr::select(AbsAbun_1ep9, alpha, gamma) %>% 
+  dplyr::rename("AbsAbun" = "AbsAbun_1ep9")
 
-write.csv(df_species_N_7_Jinjus_03, file = "c_001_deterministic/df_species_N_7.csv")
+write.csv(df_species_N_7_Jinjus_03, file = "c_001_deterministic/species_N_7.csv", row.names = FALSE)
 ```
 
 
@@ -150,8 +153,6 @@ I don't know what are the correct values for Jinju's paper, but looking at her s
 ```{r}
 # install.packages("reshape2")
 # Load the ggplot2 package
-library(ggplot2)
-library(reshape2)
 
 # Example matrix
 # mat <- matrix(runif(100), nrow = 10, ncol = 10)
@@ -205,19 +206,19 @@ mat_interactions <- read.csv(fln_interactions_mat, header = FALSE) %>% as_tibble
 colnames(mat_interactions) <- NULL
 
 
-mat_interactions_2_i <- 10^mat_interactions
-mat_interactions_2_i[mat_interactions_2_i == 1] <- 0
-mat_interactions_2 <- mat_interactions_2_i*10^(1e-9)
+# mat_interactions_2_i <- 10^mat_interactions
+# mat_interactions_2_i[mat_interactions_2_i == 1] <- 0
+# mat_interactions_2 <- mat_interactions_2_i*10^(1e-9)
 
 # Convert matrix to data frame
 mat_df <- melt(mat_interactions)
-mat_df_2 <- melt(mat_interactions_2_i)
+# mat_df_2 <- melt(mat_interactions_2_i)
 
 # Plot using ggplot2
 lbl_title <- "" # "Interaction Matrix"
 lbl_x <- "Species"
 lbl_y <- "Species"
-ggplot(mat_df_2, aes(Var2, Var1, fill = value)) +
+ggplot(mat_df, aes(Var2, Var1, fill = value)) +
   geom_tile(color = "white") +  # Plot tiles
   geom_text(aes(label = round(value, 1)), color = "black") +  # Add value text
   scale_fill_gradient(low = "white", high = "blue") +
@@ -241,22 +242,6 @@ v_tmp <- df_species %>% pull(AbsAbun)
 mat_interactions %*% v_tmp
 ```
 
-
-```{r}
-df_species %>% 
-  dplyr::mutate(AbsAbun2 = 10^AbsAbun)
-```
-
-
-```{r}
-t(mat_interactions) %*% v_tmp
-
-```
-
-
-```{r}
-v_tmp
-```
 
 
 
@@ -314,7 +299,8 @@ ggplot(unitary_vectors) +
 
 
 ```{r}
-v_xlim <- c(0, 20)
+v_xlim <- c(0, 50)
+v_ylim <- c(100, 10^11)
 ```
 
 
@@ -322,17 +308,22 @@ v_xlim <- c(0, 20)
 
 ```{r, fig.height=6, fig.width=8}
 df_trajectories <- read.csv("c_001_deterministic/df_trajectories_N_7.csv")
-df_trajectories %>% 
+plt_tmp <- df_trajectories %>% 
   pivot_longer(cols = contains("Species"), names_to = "id_species", values_to = "AbsAbun") %>% 
   dplyr::mutate(id_species = str_replace_all(id_species, "Species.", "")) %>% 
   dplyr::mutate(id_species = as.integer(id_species)) %>% 
   ggplot() +
-  geom_line(aes(x=Time, y=AbsAbun, color=id_species, group=id_species)) +
+  geom_line (aes(x=Time, y=AbsAbun*1e9, color=as.factor(id_species), group=id_species)) +
+  # geom_point(aes(x=Time, y=AbsAbun*1e9, color=as.factor(id_species), group=id_species)) +
   coord_cartesian(
-    xlim = v_xlim
+    xlim = v_xlim,
+    ylim = v_ylim
   ) +
+  scale_y_log10() +
   theme_ceor
 
+# plt_tmp
+plotly::ggplotly(plt_tmp)
 ```
 
 
@@ -360,6 +351,7 @@ df_diversity %>%
 
 
 ### Shannon
+
 ```{r}
 
 df_diversity %>% 
@@ -375,6 +367,46 @@ df_diversity %>%
   theme_ceor
 ```
 
+
+
+### BrayCurtis
+
+```{r}
+
+df_diversity %>% 
+  ggplot(aes(x=time, y=BrayCurtis))+
+  # geom_line(data=DF_DIVERSITY, aes(x=V1, y=V3)) +
+  geom_line() +
+  geom_point() +
+  # geom_line(aes(y=V2), color = 'red') + 
+  # geom_point() +
+  coord_cartesian(
+    xlim = v_xlim
+  ) +
+  # scale_y_log10()  +
+  theme_ceor
+```
+
+
+### BrayCurtis vs Shannon
+
+```{r}
+
+plt_tmp <- df_diversity %>% 
+  dplyr::filter(time < 20) %>% 
+  ggplot(aes(x=Shannon, y=BrayCurtis, color=time))+
+  # geom_line(data=DF_DIVERSITY, aes(x=V1, y=V3)) +
+  geom_point() +
+  # geom_line(aes(y=V2), color = 'red') + 
+  # geom_point() +
+  # coord_cartesian(
+  #   xlim = v_xlim
+  # ) +
+  # scale_y_log10()  +
+  theme_ceor
+
+plotly::ggplotly(plt_tmp)
+```
 
 
 ```{r, fig.height=8, fig.width=16}

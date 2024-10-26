@@ -108,6 +108,7 @@ double calc_ShannonIndex(const std::vector<double>& relativeAbundances) {
 std::map<std::string, std::vector<double>> readCSVWithHeaders(const std::string& fileName) {
     std::ifstream file(fileName);
     std::map<std::string, std::vector<double>> dataColumns;
+    std::vector<std::string> headers;
 
     // Check if the file was opened successfully
     if (!file) {
@@ -122,8 +123,9 @@ std::map<std::string, std::vector<double>> readCSVWithHeaders(const std::string&
         std::stringstream ss(line);
         std::string header;
 
-        // Read each header and initialize an empty vector for it
+        // Read each header, store it in headers list, and initialize an empty vector in dataColumns
         while (std::getline(ss, header, ',')) {
+            headers.push_back(header);
             dataColumns[header] = std::vector<double>();  // Create an empty vector for each column
         }
     }
@@ -132,12 +134,11 @@ std::map<std::string, std::vector<double>> readCSVWithHeaders(const std::string&
     while (std::getline(file, line)) {
         std::stringstream ss(line);
         std::string value;
-        size_t columnIndex = 0;
-
-        // Iterate over the map to access headers and fill columns
-        for (auto& [header, column] : dataColumns) {
+        
+        // Iterate using the headers list to ensure column order
+        for (const auto& header : headers) {
             if (std::getline(ss, value, ',')) {
-                column.push_back(std::stod(value));  // Convert string to double and add to column
+                dataColumns[header].push_back(std::stod(value));  // Convert string to double and add to column
             }
         }
     }
