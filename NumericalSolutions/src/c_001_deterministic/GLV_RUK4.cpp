@@ -72,7 +72,7 @@ int main() {
     // Growth rates for each species (alpha)
     std::vector<double> alpha = dataColumns["alpha"];
 
-    std::vector<double> gamma = dataColumns["dontknow"];
+    std::vector<double> gamma = dataColumns["gamma"];
     for (int i=0; i < AbsAbun.size(); i++){
         std::cout << i << ": " << AbsAbun[i] << csvsep << alpha[i] << csvsep << gamma[i] << std::endl;
     }
@@ -116,6 +116,12 @@ int main() {
             dbl_total_AbsAbun = accumulate(AbsAbun.begin(), AbsAbun.end(), 0.0);
             RelAbun = calc_RelAbun(AbsAbun);
             dbl_shannon = calc_ShannonIndex(RelAbun);
+
+            for (int i=0; i < AbsAbun_0.size(); i++){
+                std::cout << AbsAbun_0[i] << csvsep;
+            }
+            std::cout <<  std::endl;
+
             try {
                 dbl_bray_curtis = calc_bray_curtis_dissimilarity(AbsAbun, AbsAbun_0);
             } catch (const std::invalid_argument& e) {
