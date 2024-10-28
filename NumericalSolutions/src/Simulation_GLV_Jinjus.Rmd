@@ -370,6 +370,141 @@ df_diversity %>%
 
 
 
+```{r}
+df_ddt_diversity <- data.frame(
+  time = df_diversity$time[1:length(df_diversity$time) - 1] + 0.5*diff(df_diversity$time),
+  Shannon = df_diversity$Shannon[1:length(df_diversity$time) - 1],
+  BrayCurtis = df_diversity$BrayCurtis[1:length(df_diversity$time) - 1],
+  ddt_Shannon = diff(df_diversity$Shannon)/diff(df_diversity$time),
+  ddt_BrayCurtis = diff(df_diversity$BrayCurtis)/diff(df_diversity$time)
+)
+
+
+df_ddt_diversity %>% 
+  ggplot(aes(x=time, y=ddt_Shannon))+
+  # geom_line(data=DF_DIVERSITY, aes(x=V1, y=V3)) +
+  geom_line() +
+  geom_line(aes(y=ddt_BrayCurtis), color='red') +
+  # geom_line(aes(y=V2), color = 'red') + 
+  # geom_point() +
+  coord_cartesian(
+    xlim = v_xlim
+  ) +
+  # scale_y_log10()  +
+  theme_ceor
+```
+
+
+### BrayCurtis vs Shannon
+
+
+```{r}
+df_ddt_diversity  %>% 
+  # dplyr::filter(time <= 8) %>% 
+  # dplyr::filter(time <= 8 & time > 5) %>% 
+  ggplot(aes(x=Shannon, y=BrayCurtis))+
+  # geom_line(data=DF_DIVERSITY, aes(x=V1, y=V3)) +
+  # geom_line(aes(color=log(time))) +
+  geom_path(aes(color=log(time))) +
+  geom_point(aes(color=log(time))) +
+  # geom_line(aes(y=V2), color = 'red') + 
+  # geom_point() +
+  # coord_cartesian(
+  #   xlim = v_xlim
+  # ) +
+  # scale_y_log10()  +
+  theme_ceor
+```
+
+
+```{r}
+df_ddt_diversity  %>% 
+  # dplyr::filter(time <= 8) %>% 
+  # dplyr::filter(time <= 8 & time > 5) %>% 
+  ggplot(aes(x=Shannon, y=ddt_Shannon))+
+  # geom_line(data=DF_DIVERSITY, aes(x=V1, y=V3)) +
+  # geom_line(aes(color=log(time))) +
+  geom_path(aes(color=log(time))) +
+  geom_point(aes(color=log(time))) +
+  # geom_line(aes(y=V2), color = 'red') + 
+  # geom_point() +
+  # coord_cartesian(
+  #   xlim = v_xlim
+  # ) +
+  # scale_y_log10()  +
+  theme_ceor
+```
+
+
+```{r}
+df_ddt_diversity  %>% 
+  # dplyr::filter(time <= 8) %>% 
+  # dplyr::filter(time <= 8 & time > 5) %>% 
+  ggplot(aes(x=BrayCurtis, y=ddt_BrayCurtis))+
+  # geom_line(data=DF_DIVERSITY, aes(x=V1, y=V3)) +
+  # geom_line(aes(color=log(time))) +
+  geom_path(aes(color=log(time))) +
+  geom_point(aes(color=log(time))) +
+  # geom_line(aes(y=V2), color = 'red') + 
+  # geom_point() +
+  # coord_cartesian(
+  #   xlim = v_xlim
+  # ) +
+  # scale_y_log10()  +
+  theme_ceor
+```
+
+
+```{r}
+df_ddt_diversity  %>% 
+  ggplot(aes(x=ddt_BrayCurtis, y=ddt_Shannon))+
+  # geom_line(data=DF_DIVERSITY, aes(x=V1, y=V3)) +
+  geom_path(aes(color=log(time))) +
+  geom_point(aes(color=log(time))) +
+  # geom_line(aes(y=V2), color = 'red') + 
+  # geom_point() +
+  # coord_cartesian(
+  #   xlim = v_xlim
+  # ) +
+  # scale_y_log10()  +
+  theme_ceor
+```
+
+
+
+```{r}
+df_ddt_diversity  %>% 
+  ggplot(aes(x=BrayCurtis, y=ddt_Shannon))+
+  # geom_line(data=DF_DIVERSITY, aes(x=V1, y=V3)) +
+  geom_path(aes(color=log(time))) +
+  geom_point(aes(color=log(time))) +
+  # geom_line(aes(y=V2), color = 'red') + 
+  # geom_point() +
+  # coord_cartesian(
+  #   xlim = v_xlim
+  # ) +
+  # scale_y_log10()  +
+  theme_ceor
+```
+
+
+
+
+```{r}
+df_ddt_diversity  %>% 
+  ggplot(aes(x=ddt_BrayCurtis, y=Shannon))+
+  # geom_line(data=DF_DIVERSITY, aes(x=V1, y=V3)) +
+  geom_path(aes(color=log(time))) +
+  geom_point(aes(color=log(time))) +
+  # geom_line(aes(y=V2), color = 'red') + 
+  # geom_point() +
+  # coord_cartesian(
+  #   xlim = v_xlim
+  # ) +
+  # scale_y_log10()  +
+  theme_ceor
+```
+
 ### BrayCurtis
 
 ```{r}
@@ -409,7 +544,6 @@ df_diversity %>%
 ```
 
 
-### BrayCurtis vs Shannon
 
 ```{r}
 
