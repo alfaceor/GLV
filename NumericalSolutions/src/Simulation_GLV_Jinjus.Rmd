@@ -342,6 +342,7 @@ df_diversity %>%
   ggplot(aes(x=time, y=total_AbsAbun))+
   # geom_line(data=DF_DIVERSITY, aes(x=V1, y=V3)) +
   geom_line() +
+  geom_point() +
   coord_cartesian(
     xlim = v_xlim
   ) +
@@ -377,11 +378,31 @@ df_diversity %>%
   ggplot(aes(x=time, y=BrayCurtis))+
   # geom_line(data=DF_DIVERSITY, aes(x=V1, y=V3)) +
   geom_line() +
-  geom_point() +
+  # geom_point() +
+  # scale_y_log10() +
   # geom_line(aes(y=V2), color = 'red') + 
   # geom_point() +
   coord_cartesian(
     xlim = v_xlim
+  ) +
+  # scale_y_log10()  +
+  theme_ceor
+```
+
+
+```{r}
+
+df_diversity %>% 
+  ggplot(aes(x=time, y=BrayCurtis))+
+  # geom_line(data=DF_DIVERSITY, aes(x=V1, y=V3)) +
+  geom_line() +
+  # geom_point() +
+  scale_y_log10() +
+  # geom_line(aes(y=V2), color = 'red') + 
+  # geom_point() +
+  coord_cartesian(
+    xlim = v_xlim,
+    ylim = c(1e-5, 1e1)
   ) +
   # scale_y_log10()  +
   theme_ceor

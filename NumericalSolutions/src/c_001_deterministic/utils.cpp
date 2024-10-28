@@ -9,6 +9,7 @@
 #include <string>
 #include <sstream>
 #include <numeric>
+#include <stdexcept>
 
 
 // Function to open the file and write the header
@@ -105,7 +106,7 @@ double calc_ShannonIndex(const std::vector<double>& relativeAbundances) {
 
 // Function to read a CSV file with headers and save each column independently
 // FIXME: ADD csvsep as default ',' 
-std::map<std::string, std::vector<double>> readCSVWithHeaders(const std::string& fileName) {
+std::map<std::string, std::vector<double>> readCSVWithHeaders01(const std::string& fileName) {
     std::ifstream file(fileName);
     std::map<std::string, std::vector<double>> dataColumns;
     std::vector<std::string> headers;
@@ -148,6 +149,68 @@ std::map<std::string, std::vector<double>> readCSVWithHeaders(const std::string&
 
     return dataColumns;
 }
+
+
+
+// Helper function to remove leading and trailing quotes
+std::string removeQuotes(const std::string& str) {
+    if (str.size() > 1 && (str.front() == '"' || str.front() == '\'') && str.front() == str.back()) {
+        return str.substr(1, str.size() - 2);  // Remove both first and last character if they are matching quotes
+    }
+    return str;
+}
+
+std::map<std::string, std::vector<double>> readCSVWithHeaders(const std::string& fileName) {
+    std::ifstream file(fileName);
+    std::map<std::string, std::vector<double>> dataColumns;
+    std::vector<std::string> headers;
+
+    // Check if the file was opened successfully
+    if (!file) {
+        std::cerr << "Error opening file: " << fileName << std::endl;
+        return dataColumns; // Return empty map if file can't be opened
+    }
+
+    std::string line;
+
+    // Read the header line
+    if (std::getline(file, line)) {
+        std::stringstream ss(line);
+        std::string header;
+
+        // Read each header, remove any surrounding quotes, and initialize an empty vector in dataColumns
+        while (std::getline(ss, header, ',')) {
+            std::string cleanedHeader = removeQuotes(header);
+            headers.push_back(cleanedHeader);
+            dataColumns[cleanedHeader] = std::vector<double>();  // Create an empty vector for each column
+        }
+    }
+
+    // Read the remaining lines (the data)
+    while (std::getline(file, line)) {
+        std::stringstream ss(line);
+        std::string value;
+        
+        // Iterate using the headers list to ensure column order
+        for (const auto& header : headers) {
+            if (std::getline(ss, value, ',')) {
+                try {
+                    dataColumns[header].push_back(std::stod(value));  // Convert string to double and add to column
+                } catch (const std::invalid_argument& e) {
+                    std::cerr << "Non-numeric data found in column '" << header << "': " << value << std::endl;
+                    dataColumns[header].push_back(0.0);  // Optional: Handle non-numeric data
+                }
+            }
+        }
+    }
+
+    // Close the file
+    file.close();
+
+    return dataColumns;
+}
+
+
 
 
 // FIXME: ADD csvsep as default ',' 

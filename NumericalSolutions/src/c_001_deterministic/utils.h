@@ -34,8 +34,14 @@ std::vector<double> calc_RelAbun(const std::vector<double>& absoluteAbundances);
 // Function to calculate Shannon index based on the relative abundances
 double calc_ShannonIndex(const std::vector<double>& relativeAbundances);
 
-// Function to read a CSV file with headers and save each column independently
+// Helper function to remove leading and trailing quotes
+std::string removeQuotes(const std::string& str);
+
+
 std::map<std::string, std::vector<double>> readCSVWithHeaders(const std::string& fileName);
+
+// Function to read a CSV file with headers and save each column independently
+std::map<std::string, std::vector<double>> readCSVWithHeaders01(const std::string& fileName);
 
 // Function to read a CSV file with headers and save each column independently
 std::map<std::string, ColumnData> readCSVWithHeaders02(const std::string& fileName);
