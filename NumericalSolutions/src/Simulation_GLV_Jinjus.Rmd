@@ -371,6 +371,20 @@ df_diversity %>%
 
 
 ```{r}
+df_diversity %>% 
+  ggplot(aes(x=Shannon, y=total_AbsAbun))+
+  # geom_line(data=DF_DIVERSITY, aes(x=V1, y=V3)) +
+  geom_path() +
+  geom_point() +
+  # coord_cartesian(
+  #   xlim = v_xlim
+  # ) +
+  theme_ceor
+
+```
+
+
+```{r}
 df_ddt_diversity <- data.frame(
   time = df_diversity$time[1:length(df_diversity$time) - 1] + 0.5*diff(df_diversity$time),
   Shannon = df_diversity$Shannon[1:length(df_diversity$time) - 1],

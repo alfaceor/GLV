@@ -399,3 +399,130 @@ void rk4_step_lotka_volterra_perturb_linear(std::vector<double>& AbsAbun, double
         AbsAbun[i] += dt / 6.0 * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]);
     }
 }
+
+
+// Function to calculate the relative abundances
+double calc_bray_curtis_dissimilarity(const std::vector<double>& x, const std::vector<double>& y) {
+    if (x.size() != y.size()) {
+        throw std::invalid_argument("Vectors must be of the same length.");
+    }
+    
+    double numerator = 0.0;
+    double denominator = 0.0;
+    
+    for (size_t i = 0; i < x.size(); ++i) {
+        numerator += std::abs(x[i] - y[i]);
+        denominator += x[i] + y[i];
+    }
+    
+    if (denominator == 0.0) {
+        throw std::invalid_argument("Denominator is zero, cannot calculate Bray-Curtis dissimilarity.");
+    }
+    
+    return numerator / denominator;
+}
+
+// Function to calculate the antibiotic concentration
+// FIXME: Generalize parameters
+double antibiotic_concentration(double t){
+    double ka = 0.99;
+    double ke = 0.21;
+    double Tend = 5;
+    double Ct = 0.0;
+
+    if(t < 0){
+        Ct = 0.0;
+    }if (t < Tend){
+        Ct = (1.0/(1-exp(-ka*Tend)))*(1-exp(-ka*t));
+    }else{
+        Ct = exp(-ke*(t-Tend));
+    }
+
+    if (Ct < 1e-10) Ct = 0.0;
+    return(Ct);
+}
+
+
+// Function to calculate the Lotka-Volterra equations for any number of species with a linear perturbation proportional to the species abundance
+void lotka_volterra_Ab_pertur_001(const std::vector<double>& AbsAbun, std::vector<double>& dAbsAbun_dt, 
+            const std::vector<double>& alpha, 
+            const std::vector<std::vector<double>>& eps, 
+            const std::vector<double>& gamma, 
+            double t) {
+    int num_species = AbsAbun.size();
+    
+    for (int i = 0; i < num_species; i++) {
+        dAbsAbun_dt[i] = alpha[i] * AbsAbun[i] - gamma[i] * antibiotic_concentration(t) * AbsAbun[i]; // logistic growth
+        for (int j = 0; j < num_species; j++) {
+            dAbsAbun_dt[i] += eps[i][j] * AbsAbun[i] * AbsAbun[j]; // Interaction term
+            // std::cout<< dAbsAbun_dt[i] << std::endl;
+        }
+    }
+}
+
+
+// Runge-Kutta 4th order method for solving ODEs for linear perturbation
+void rk4_step_lotka_volterra_Ab_pertur_001(std::vector<double>& AbsAbun, double t, double dt, 
+            const std::vector<double>& alpha,
+            const std::vector<std::vector<double>>& eps,
+            const std::vector<double>& gamma) {
+    int n = AbsAbun.size();
+    std::vector<double> k1(n), k2(n), k3(n), k4(n), AbsAbun_temp(n);
+
+    // k1 = f(AbsAbun, t)
+    lotka_volterra_Ab_pertur_001(AbsAbun, k1, alpha, eps, gamma, t);
+
+    // k2 = f(AbsAbun + dt/2 * k1, t + dt/2)
+    for (int i = 0; i < n; i++) AbsAbun_temp[i] = AbsAbun[i] + dt / 2.0 * k1[i];
+    lotka_volterra_Ab_pertur_001(AbsAbun_temp, k2, alpha, eps, gamma, t);
+
+    // k3 = f(AbsAbun + dt/2 * k2, t + dt/2)
+    for (int i = 0; i < n; i++) AbsAbun_temp[i] = AbsAbun[i] + dt / 2.0 * k2[i];
+    lotka_volterra_Ab_pertur_001(AbsAbun_temp, k3, alpha, eps, gamma, t);
+
+    // k4 = f(AbsAbun + dt * k3, t + dt)
+    for (int i = 0; i < n; i++) AbsAbun_temp[i] = AbsAbun[i] + dt * k3[i];
+    lotka_volterra_Ab_pertur_001(AbsAbun_temp, k4, alpha, eps, gamma, t);
+
+    // Update AbsAbun using the RK4 formula
+    for (int i = 0; i < n; i++) {
+        AbsAbun[i] += dt / 6.0 * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]);
+    }
+}
+
+
+
+// // Small constant to avoid log(0)
+// const double EPSILON = 1e-12;
+
+// Kullback-Leibler divergence with log base 2
+double calc_KLDivergence(const std::vector<double>& P, const std::vector<double>& Q) {
+    double klDiv = 0.0;
+    for (size_t i = 0; i < P.size(); ++i) {
+        if (P[i] > 0) {
+            klDiv += P[i] * std::log2(P[i] / (Q[i] + EPSILON) + EPSILON);
+        }
+    }
+    return klDiv;
+}
+
+// Jensen-Shannon Divergence
+double calc_JensenShannonDivergence(const std::vector<double>& P, const std::vector<double>& Q) {
+    if (P.size() != Q.size()) {
+        throw std::invalid_argument("Vectors P and Q must be of the same length.");
+    }
+    
+    // Calculate the average distribution M = 0.5 * (P + Q)
+    std::vector<double> M(P.size());
+    for (size_t i = 0; i < P.size(); ++i) {
+        M[i] = 0.5 * (P[i] + Q[i]);
+    }
+    
+    // Calculate JS Divergence: 0.5 * (KL(P || M) + KL(Q || M))
+    return 0.5 * (calc_KLDivergence(P, M) + calc_KLDivergence(Q, M));
+}
+
+
+
+
+

@@ -12,6 +12,12 @@
 #include <variant> // For std::variant
 #include <type_traits> // For std::holds_alternative
 
+#include <stdexcept>
+
+
+// Small constant to avoid log(0)
+const double EPSILON = 1e-12;
+
 
 // Define a variant that can hold either double or string values in the vectors
 using ColumnData = std::variant<std::vector<double>, std::vector<std::string>>;
@@ -70,5 +76,36 @@ void rk4_step_lotka_volterra_perturb_linear(std::vector<double>& AbsAbun, double
             const std::vector<double>& alpha,
             const std::vector<std::vector<double>>& eps,
             const std::vector<double>& gamma);
+
+
+// Function to calculate the relative abundances
+double calc_bray_curtis_dissimilarity(const std::vector<double>& x, const std::vector<double>& y);
+
+// Function to calculate the antibiotic concentration
+double antibiotic_concentration(double t);
+
+// Function to calculate the Lotka-Volterra equations for any number of species with a linear perturbation proportional to the species abundance
+void lotka_volterra_Ab_pertur_001(const std::vector<double>& AbsAbun, std::vector<double>& dAbsAbun_dt, 
+            const std::vector<double>& alpha, 
+            const std::vector<std::vector<double>>& eps, 
+            const std::vector<double>& gamma, 
+            double t);
+
+
+// Runge-Kutta 4th order method for solving ODEs for linear perturbation
+void rk4_step_lotka_volterra_Ab_pertur_001(std::vector<double>& AbsAbun, double t, double dt, 
+            const std::vector<double>& alpha,
+            const std::vector<std::vector<double>>& eps,
+            const std::vector<double>& gamma);
+
+
+// Kullback-Leibler divergence with log base 2
+double calc_KLDivergence(const std::vector<double>& P, const std::vector<double>& Q);
+
+
+// Jensen-Shannon Divergence
+double calc_JensenShannonDivergence(const std::vector<double>& P, const std::vector<double>& Q);
+
+
 
 #endif // UTILS_H
