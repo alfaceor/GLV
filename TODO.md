@@ -8,3 +8,4 @@
 - [ ] Write Methods in paper
 - [ ] How can I make something similar to a Mori projection for the effect of the other species?
 - [ ] If I add a stochastic noise to each species ODE, should this be drawn from the same distribution? Some particles will feel a different thermal bath just for size differences so probably not the same spectral properties, rigth?
+- [ ] Modify perturbation function to get antiobitic concentrationss
