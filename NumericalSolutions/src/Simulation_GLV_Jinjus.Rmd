@@ -65,7 +65,12 @@ Make simulations of a lotka-volterra system, considering for N species.
 ```
 
 
+\begin{align}
+ \frac{d}{dt} N_{k} = \alpha_{k} N_{k} 
+\begin{align}
 
+<!-- alpha[i] * AbsAbun[i] - gamma[i] * antibiotic_concentration(t) * AbsAbun[i] -->
+<!--  eps[i][j] * AbsAbun[i] * AbsAbun[j] -->
 
 ## Interaction Matrix
 
@@ -95,7 +100,9 @@ v_AbsAbun_1em9
 ```{r}
 fln_interactions_mat_jinjuspaper <- "c_001_deterministic/interaction_matrix_N_7.mat_Jinjus"
 df_interactions_mat_jinjuspaper <- read.csv(fln_interactions_mat_jinjuspaper)
-df_interactions_mat_jinjuspaper
+df_interactions_mat_jinjuspaper %>% 
+  flextable::flextable() %>% 
+  flextable::theme_zebra()
 ```
 
 
@@ -103,25 +110,25 @@ df_interactions_mat_jinjuspaper
 mat_interactions_mat_jinjuspaper <- df_interactions_mat_jinjuspaper %>% dplyr::select(-Species) %>% as.matrix()
 colnames(mat_interactions_mat_jinjuspaper) <- NULL
 mat_interactions_mat_jinjuspaper[is.na(mat_interactions_mat_jinjuspaper)] <- 0
-mat_interactions_mat_jinjuspaper
+# mat_interactions_mat_jinjuspaper
 
 mat_df_jinjuspaper <- melt(mat_interactions_mat_jinjuspaper)
 
-# Plot using ggplot2
-lbl_title <- "" # "Interaction Matrix"
-lbl_x <- "Species"
-lbl_y <- "Species"
-ggplot(mat_df_jinjuspaper, aes(Var2, Var1, fill = value)) +
-  geom_tile(color = "white") +  # Plot tiles
-  geom_text(aes(label = round(value, 1)), color = "black") +  # Add value text
-  scale_fill_gradient(low = "white", high = "blue") +
-  labs(title = lbl_title, x = lbl_x, y = lbl_y) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_fill_distiller(palette = "Spectral") +
-  coord_fixed() +
-  scale_y_reverse() +  # Flip the y-axis for intuitive plotting
-  theme_ceor
+# # Plot using ggplot2
+# lbl_title <- "" # "Interaction Matrix"
+# lbl_x <- "Species"
+# lbl_y <- "Species"
+# ggplot(mat_df_jinjuspaper, aes(Var2, Var1, fill = value)) +
+#   geom_tile(color = "white") +  # Plot tiles
+#   geom_text(aes(label = round(value, 1)), color = "black") +  # Add value text
+#   scale_fill_gradient(low = "white", high = "blue") +
+#   labs(title = lbl_title, x = lbl_x, y = lbl_y) +
+#   theme_minimal() +
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+#   scale_fill_distiller(palette = "Spectral") +
+#   coord_fixed() +
+#   scale_y_reverse() +  # Flip the y-axis for intuitive plotting
+#   theme_ceor
 ```
 
 
@@ -169,21 +176,21 @@ colnames(mat_interactions) <- NULL
 # Convert matrix to data frame
 mat_df <- melt(mat_interactions)
 
-# Plot using ggplot2
-lbl_title <- "" # "Interaction Matrix"
-lbl_x <- "Species"
-lbl_y <- "Species"
-ggplot(mat_df, aes(Var2, Var1, fill = value)) +
-  geom_tile(color = "white") +  # Plot tiles
-  geom_text(aes(label = round(value, 1)), color = "black") +  # Add value text
-  scale_fill_gradient(low = "white", high = "blue") +
-  labs(title = lbl_title, x = lbl_x, y = lbl_y) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_fill_distiller(palette = "Spectral") +
-  coord_fixed() +
-  scale_y_reverse() +  # Flip the y-axis for intuitive plotting
-  theme_ceor
+# # Plot using ggplot2
+# lbl_title <- "" # "Interaction Matrix"
+# lbl_x <- "Species"
+# lbl_y <- "Species"
+# ggplot(mat_df, aes(Var2, Var1, fill = value)) +
+#   geom_tile(color = "white") +  # Plot tiles
+#   geom_text(aes(label = round(value, 1)), color = "black") +  # Add value text
+#   scale_fill_gradient(low = "white", high = "blue") +
+#   labs(title = lbl_title, x = lbl_x, y = lbl_y) +
+#   theme_minimal() +
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+#   scale_fill_distiller(palette = "Spectral") +
+#   coord_fixed() +
+#   scale_y_reverse() +  # Flip the y-axis for intuitive plotting
+#   theme_ceor
 ```
 
 
@@ -239,7 +246,13 @@ ggplot(mat_df, aes(Var2, Var1, fill = value)) +
 fln_species <- "c_001_deterministic/species_N_7.csv"
 df_species <- read.csv(fln_species)
 v_tmp <- df_species %>% pull(AbsAbun) 
-mat_interactions %*% v_tmp
+# mat_interactions %*% v_tmp
+df_species %>% 
+  flextable::flextable() %>% 
+  flextable::colformat_double(
+    big.mark = ",", digits = 2, na_str = "N/A"
+  ) %>% 
+  flextable::theme_zebra()
 ```
 
 
@@ -257,11 +270,14 @@ eigen_mat_interactions <- eigen(mat_interactions)
 
 
 ```{r}
-
 # Calculate eigenvectors
 eigen_mat_interactions <- eigen(mat_interactions)
 eigen_mat_interactions_vectors <- eigen_mat_interactions$vectors
+eigen_mat_interactions
+```
 
+
+```{r}
 # Prepare data for plotting
 # Create a data frame with origin (0, 0) and the end points of the eigenvectors
 unitary_vectors <- data.frame(
@@ -308,13 +324,22 @@ v_ylim <- c(100, 10^11)
 
 ```{r, fig.height=6, fig.width=8}
 df_trajectories <- read.csv("c_001_deterministic/df_trajectories_N_7.csv")
+df_species_02 <- df_species %>% 
+  dplyr::mutate(id_species=seq_along(AbsAbun)) %>% 
+  dplyr::mutate(Time = 30.0)
+
+lbl_x <- "Time (days)"
+lbl_y <- "Absolute Abundance"
+
 plt_tmp <- df_trajectories %>% 
   pivot_longer(cols = contains("Species"), names_to = "id_species", values_to = "AbsAbun") %>% 
   dplyr::mutate(id_species = str_replace_all(id_species, "Species.", "")) %>% 
   dplyr::mutate(id_species = as.integer(id_species)) %>% 
   ggplot() +
   geom_line (aes(x=Time, y=AbsAbun*1e9, color=as.factor(id_species), group=id_species)) +
+  geom_point(data = df_species_02, aes(x=Time, y=AbsAbun*1e9, color=as.factor(id_species), group=id_species) ) +
   # geom_point(aes(x=Time, y=AbsAbun*1e9, color=as.factor(id_species), group=id_species)) +
+  labs(x=lbl_x, y=lbl_y) +
   coord_cartesian(
     xlim = v_xlim,
     ylim = v_ylim
@@ -328,12 +353,16 @@ plotly::ggplotly(plt_tmp)
 
 
 
-## Diversity
+## Diversity {.tabset}
+
 
 
 ```{r}
 df_diversity <- read.csv("c_001_deterministic/df_diversity_N_7.csv")
 ```
+
+
+
 
 ### AbsAbun
 
@@ -359,7 +388,8 @@ df_diversity %>%
   ggplot(aes(x=time, y=Shannon))+
   # geom_line(data=DF_DIVERSITY, aes(x=V1, y=V3)) +
   geom_line() +
-  # geom_line(aes(y=V2), color = 'red') + 
+  geom_line(aes(y=0.03*total_AbsAbun), color = 'red') +
+  geom_vline(xintercept = 5, color='gray') +
   # geom_point() +
   coord_cartesian(
     xlim = v_xlim
@@ -369,41 +399,59 @@ df_diversity %>%
 ```
 
 
+### Jensen-Shannon divergence
 
 ```{r}
 df_diversity %>% 
-  ggplot(aes(x=Shannon, y=total_AbsAbun))+
-  # geom_line(data=DF_DIVERSITY, aes(x=V1, y=V3)) +
-  geom_path() +
-  geom_point() +
-  # coord_cartesian(
-  #   xlim = v_xlim
-  # ) +
-  theme_ceor
-
-```
-
-
-```{r}
-df_ddt_diversity <- data.frame(
-  time = df_diversity$time[1:length(df_diversity$time) - 1] + 0.5*diff(df_diversity$time),
-  Shannon = df_diversity$Shannon[1:length(df_diversity$time) - 1],
-  BrayCurtis = df_diversity$BrayCurtis[1:length(df_diversity$time) - 1],
-  ddt_Shannon = diff(df_diversity$Shannon)/diff(df_diversity$time),
-  ddt_BrayCurtis = diff(df_diversity$BrayCurtis)/diff(df_diversity$time)
-)
-
-
-df_ddt_diversity %>% 
-  ggplot(aes(x=time, y=ddt_Shannon))+
+  ggplot(aes(x=time, y=jsd))+
   # geom_line(data=DF_DIVERSITY, aes(x=V1, y=V3)) +
   geom_line() +
-  geom_line(aes(y=ddt_BrayCurtis), color='red') +
   # geom_line(aes(y=V2), color = 'red') + 
   # geom_point() +
+  geom_vline(xintercept = 5, color='gray') +
   coord_cartesian(
     xlim = v_xlim
   ) +
+  # scale_y_log10()  +
+  theme_ceor
+```
+
+
+### BrayCurtis
+
+```{r}
+
+df_diversity %>% 
+  ggplot(aes(x=time, y=BrayCurtis))+
+  # geom_line(data=DF_DIVERSITY, aes(x=V1, y=V3)) +
+  geom_line() +
+  # geom_point() +
+  # scale_y_log10() +
+  # geom_line(aes(y=V2), color = 'red') + 
+  # geom_point() +
+  geom_vline(xintercept = 5, color='gray') +
+
+  coord_cartesian(
+    xlim = v_xlim
+  ) +
+  # scale_y_log10()  +
+  theme_ceor
+```
+
+
+### Bray Curtis vs Jensen-Shannon divergence
+
+```{r}
+df_diversity %>% 
+  ggplot(aes(x=BrayCurtis, y=jsd))+
+  # geom_line(data=DF_DIVERSITY, aes(x=V1, y=V3)) +
+  geom_point(aes(color=log(time))) +
+  geom_path (aes(color=log(time))) +
+  # geom_line(aes(y=V2), color = 'red') + 
+  # geom_point() +
+  # coord_cartesian(
+  #   xlim = v_xlim
+  # ) +
   # scale_y_log10()  +
   theme_ceor
 ```
@@ -413,7 +461,7 @@ df_ddt_diversity %>%
 
 
 ```{r}
-df_ddt_diversity  %>% 
+df_diversity  %>% 
   # dplyr::filter(time <= 8) %>% 
   # dplyr::filter(time <= 8 & time > 5) %>% 
   ggplot(aes(x=Shannon, y=BrayCurtis))+
@@ -429,6 +477,144 @@ df_ddt_diversity  %>%
   # scale_y_log10()  +
   theme_ceor
 ```
+
+
+### Jensen-Shannon vs Kullback-Leibler divergence
+
+
+```{r}
+df_diversity %>% 
+  ggplot(aes(x=kld, y=jsd))+
+  # geom_line(data=DF_DIVERSITY, aes(x=V1, y=V3)) +
+  geom_path() +
+  # geom_line(aes(y=V2), color = 'red') + 
+  # geom_point() +
+  # coord_cartesian(
+  #   xlim = v_xlim
+  # ) +
+  # scale_y_log10()  +
+  theme_ceor
+```
+
+### Jensen-Shannon vs Shannon
+
+
+```{r}
+df_diversity %>% 
+  ggplot(aes(x=jsd, y=Shannon))+
+  # geom_line(data=DF_DIVERSITY, aes(x=V1, y=V3)) +
+  geom_point(aes(color=log(time))) +
+  geom_path (aes(color=log(time))) +
+  # geom_line(aes(y=V2), color = 'red') + 
+  # geom_point() +
+  # coord_cartesian(
+  #   xlim = v_xlim
+  # ) +
+  # scale_y_log10()  +
+  theme_ceor
+```
+
+
+### Total Abundance vs Shannon
+
+```{r}
+df_diversity %>% 
+  ggplot(aes(x=Shannon, y=total_AbsAbun))+
+  # geom_line(data=DF_DIVERSITY, aes(x=V1, y=V3)) +
+  geom_path() +
+  geom_point() +
+  # coord_cartesian(
+  #   xlim = v_xlim
+  # ) +
+  theme_ceor
+
+```
+
+
+
+### Total Abundance vs Bray Curtis
+
+```{r}
+df_diversity %>% 
+  ggplot(aes(x=BrayCurtis, y=total_AbsAbun))+
+  # geom_line(data=DF_DIVERSITY, aes(x=V1, y=V3)) +
+  geom_path(aes(color=log(time))) +
+  # geom_point() +
+  # coord_cartesian(
+  #   xlim = v_xlim
+  # ) +
+  theme_ceor
+
+```
+
+
+
+```{r}
+df_diversity %>% 
+  ggplot(aes(x=time, y=kld))+
+  # geom_line(data=DF_DIVERSITY, aes(x=V1, y=V3)) +
+  geom_line() +
+  # geom_line(aes(y=V2), color = 'red') + 
+  # geom_point() +
+  coord_cartesian(
+    xlim = v_xlim
+  ) +
+  # scale_y_log10()  +
+  theme_ceor
+```
+
+
+
+### Derivatives
+
+
+```{r}
+df_ddt_diversity <- data.frame(
+  time = df_diversity$time[1:length(df_diversity$time) - 1] + 0.5*diff(df_diversity$time),
+  Shannon = df_diversity$Shannon[1:length(df_diversity$time) - 1],
+  BrayCurtis = df_diversity$BrayCurtis[1:length(df_diversity$time) - 1],
+  ddt_Shannon = diff(df_diversity$Shannon)/diff(df_diversity$time),
+  ddt_BrayCurtis = diff(df_diversity$BrayCurtis)/diff(df_diversity$time)
+)
+```
+
+
+```{r}
+df_ddt_diversity %>% 
+  ggplot(aes(x=time, y=ddt_BrayCurtis))+
+  # geom_line(data=DF_DIVERSITY, aes(x=V1, y=V3)) +
+  geom_line () +
+  geom_point() +
+  # geom_line(aes(y=ddt_BrayCurtis), color='red') +
+  # geom_line(aes(y=V2), color = 'red') + 
+  # geom_point() +
+  coord_cartesian(
+    xlim = v_xlim
+  ) +
+  # scale_y_log10()  +
+  theme_ceor
+```
+
+
+
+```{r}
+df_ddt_diversity %>% 
+  ggplot(aes(x=time, y=ddt_Shannon))+
+  # geom_line(data=DF_DIVERSITY, aes(x=V1, y=V3)) +
+  geom_line () +
+  geom_point(alpha=0.5) +
+  geom_line(aes(y=ddt_BrayCurtis), color='red') +
+  # geom_line(aes(y=V2), color = 'red') + 
+  # geom_point() +
+  coord_cartesian(
+    xlim = v_xlim
+  ) +
+  # scale_y_log10()  +
+  theme_ceor
+```
+
+
+
 
 
 ```{r}
@@ -519,24 +705,7 @@ df_ddt_diversity  %>%
   theme_ceor
 ```
 
-### BrayCurtis
 
-```{r}
-
-df_diversity %>% 
-  ggplot(aes(x=time, y=BrayCurtis))+
-  # geom_line(data=DF_DIVERSITY, aes(x=V1, y=V3)) +
-  geom_line() +
-  # geom_point() +
-  # scale_y_log10() +
-  # geom_line(aes(y=V2), color = 'red') + 
-  # geom_point() +
-  coord_cartesian(
-    xlim = v_xlim
-  ) +
-  # scale_y_log10()  +
-  theme_ceor
-```
 
 
 ```{r}
@@ -570,13 +739,18 @@ plt_tmp <- df_diversity %>%
   # geom_point() +
   # coord_cartesian(
   #   xlim = v_xlim
-  # ) +
+  # ) +4
   # scale_y_log10()  +
   theme_ceor
 
 plotly::ggplotly(plt_tmp)
 ```
 
+
+
+### {-}
+
+## {-}
 
 ```{r, fig.height=8, fig.width=16}
 # # fln_csv <- "GLV_Simulations/output.csv"
