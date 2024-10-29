@@ -50,6 +50,7 @@ int main() {
     std::vector<double> RelAbun = std::vector<double>(AbsAbun.size()); //{0.36807, 0.31023, 0.3561, 0.54006, 0.70898, 0.47064, 0.2297, 0.83005, 0.39181, 0.29075, 0.32367};
     for (size_t i =0 ; i<RelAbun.size(); i++) RelAbun[i] = AbsAbun[i]/dbl_total_AbsAbun;
     std::vector<double> RelAbun_old = RelAbun;
+    std::vector<double> RelAbun_0 = RelAbun;
 
     // Growth rates for each species (alpha)
     std::vector<double> alpha = dataColumns["alpha"];
@@ -112,8 +113,8 @@ int main() {
             try {
                 dbl_bray_curtis = calc_bray_curtis_dissimilarity(AbsAbun, AbsAbun_0);
                 dbl_bray_curtis_delta_t = calc_bray_curtis_dissimilarity(AbsAbun, AbsAbun_old);
-                dbl_kld = calc_KLDivergence(RelAbun, RelAbun_old);
-                dbl_jsd = calc_JensenShannonDivergence(RelAbun, RelAbun_old);
+                dbl_kld = calc_KLDivergence(RelAbun, RelAbun_0);
+                dbl_jsd = calc_JensenShannonDivergence(RelAbun, RelAbun_0);
             } catch (const std::invalid_argument& e) {
                 std::cerr << "Error: " << e.what() << std::endl;
             }
