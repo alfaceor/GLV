@@ -29,6 +29,7 @@ int main() {
     std::string fln_diversity = "df_diversity_N_7.csv";
     std::string fln_trajectories = "df_trajectories_N_7.csv";
     double t_perturbation = 10;
+    std::string fln_ABperturbation = "df_ABperturbation.csv";
 
 
     // Loading data
@@ -73,11 +74,17 @@ int main() {
         return 1;  // Exit if the file couldn't be opened
     }
 
+    std::ofstream of_ABperturbation = get_of_perturbation(fln_ABperturbation);
+    if (!of_ABperturbation.is_open()) {
+        return 1;  // Exit if the file couldn't be opened
+    }
+
     // Simulation parameters
     double t = 0.0;       // Initial time
     double t_end = 450.0; // End time
     double dt = 0.01;      // Time step
     int steps = static_cast<int>(t_end / dt);
+    double antibiotic_factor = 0.0;
 
     std::ofstream of_diversity(fln_diversity);
     of_diversity << "time" << csvsep << "total_AbsAbun" 
@@ -131,8 +138,10 @@ int main() {
         
         AbsAbun_old = AbsAbun; // To calculate the difference in beta-diversity
         RelAbun_old = RelAbun;
+        antibiotic_factor = antibiotic_concentration(t);
+        of_ABperturbation << t << csvsep << antibiotic_factor << std::endl;
 
-        rk4_step_lotka_volterra_Ab_pertur_001(AbsAbun, t, dt, alpha, eps, gamma); // Advance the system by one time step
+        rk4_step_lotka_volterra_w_perturbation(AbsAbun, t, dt, alpha, eps, gamma, antibiotic_factor); // Advance the system by one time step
         // if (t> 0 & t < t_perturbation){
         //     rk4_step_lotka_volterra_perturb_linear(AbsAbun, t, dt, alpha, eps, gamma); // Advance the system by one time step
         // }else{
@@ -143,6 +152,7 @@ int main() {
     }
 
     of_trajectories.close();
+    of_ABperturbation.close();
     of_diversity.close();
 
     print_interaction_matrix(eps, num_species);

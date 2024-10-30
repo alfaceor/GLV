@@ -319,6 +319,15 @@ v_xlim <- c(0, 50)
 v_ylim <- c(100, 10^11)
 ```
 
+```{r}
+df_ABperturbation <- read.csv("c_001_deterministic/df_ABperturbation.csv")
+df_ABperturbation %>% 
+  ggplot(aes(x=Time, y=ABfactor)) +
+  geom_line() +
+  # geom_point() +
+  scale_y_log10() +
+  theme_ceor
+```
 
 
 
@@ -338,6 +347,8 @@ plt_tmp <- df_trajectories %>%
   ggplot() +
   geom_line (aes(x=Time, y=AbsAbun*1e9, color=as.factor(id_species), group=id_species)) +
   geom_point(data = df_species_02, aes(x=Time, y=AbsAbun*1e9, color=as.factor(id_species), group=id_species) ) +
+  # scale_y_continuous(sec.axis = ~ .^2)
+  geom_line(data = df_ABperturbation, aes(x=Time, y=1e9*ABfactor), linetype='dashed', color='black') +
   # geom_point(aes(x=Time, y=AbsAbun*1e9, color=as.factor(id_species), group=id_species)) +
   labs(x=lbl_x, y=lbl_y) +
   coord_cartesian(
@@ -372,6 +383,7 @@ df_diversity %>%
   # geom_line(data=DF_DIVERSITY, aes(x=V1, y=V3)) +
   geom_line() +
   geom_point() +
+  geom_vline(xintercept = 5, color='gray') +
   coord_cartesian(
     xlim = v_xlim
   ) +

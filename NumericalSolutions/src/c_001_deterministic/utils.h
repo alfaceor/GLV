@@ -23,6 +23,9 @@ const double EPSILON = 1e-12;
 using ColumnData = std::variant<std::vector<double>, std::vector<std::string>>;
 
 // Function to open the file and write the header
+std::ofstream get_of_perturbation(const std::string& filename, const std::string& sep = ",");
+
+// Function to open the file and write the header
 std::ofstream get_of_trajectories(const std::string& filename, size_t AbsAbun_size, const std::string& sep = ",");
 
 // Function to write time and absolute abundances (AbsAbun) to the file
@@ -105,6 +108,23 @@ double calc_KLDivergence(const std::vector<double>& P, const std::vector<double>
 
 // Jensen-Shannon Divergence
 double calc_JensenShannonDivergence(const std::vector<double>& P, const std::vector<double>& Q);
+
+
+
+// Function to calculate the Lotka-Volterra equations for any number of species with a linear perturbation proportional to the species abundance
+void lotka_volterra_w_perturbation(const std::vector<double>& AbsAbun, std::vector<double>& dAbsAbun_dt, 
+            const std::vector<double>& alpha, 
+            const std::vector<std::vector<double>>& eps, 
+            const std::vector<double>& gamma, 
+            double perturb_factor);
+
+
+// Runge-Kutta 4th order method for solving ODEs for linear perturbation
+void rk4_step_lotka_volterra_w_perturbation(std::vector<double>& AbsAbun, double t, double dt, 
+            const std::vector<double>& alpha,
+            const std::vector<std::vector<double>>& eps,
+            const std::vector<double>& gamma,
+            double pertub_factor);
 
 
 

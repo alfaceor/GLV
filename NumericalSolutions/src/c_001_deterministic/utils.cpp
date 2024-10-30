@@ -13,6 +13,25 @@
 
 
 // Function to open the file and write the header
+std::ofstream get_of_perturbation(const std::string& filename, const std::string& sep) {
+    // Open the file
+    std::ofstream file(filename);
+
+    // Check if file is open
+    if (!file) {
+        std::cerr << "Error: Unable to open file: " << filename << std::endl;
+        return file;  // Return the file object even if there's an error, so it can be checked later
+    }
+
+    // Write the header
+    file << "Time" 
+        << sep << "ABfactor"
+        << std::endl;
+    return file;
+}
+
+
+// Function to open the file and write the header
 std::ofstream get_of_trajectories(const std::string& filename, size_t AbsAbun_size, const std::string& sep) {
     // Open the file
     std::ofstream file(filename);
@@ -521,6 +540,58 @@ double calc_JensenShannonDivergence(const std::vector<double>& P, const std::vec
     // Calculate JS Divergence: 0.5 * (KL(P || M) + KL(Q || M))
     return 0.5 * (calc_KLDivergence(P, M) + calc_KLDivergence(Q, M));
 }
+
+
+
+
+// Function to calculate the Lotka-Volterra equations for any number of species with a linear perturbation proportional to the species abundance
+void lotka_volterra_w_perturbation(const std::vector<double>& AbsAbun, std::vector<double>& dAbsAbun_dt, 
+            const std::vector<double>& alpha, 
+            const std::vector<std::vector<double>>& eps, 
+            const std::vector<double>& gamma, 
+            double perturb_factor) {
+    int num_species = AbsAbun.size();
+    
+    for (int i = 0; i < num_species; i++) {
+        dAbsAbun_dt[i] = alpha[i] * AbsAbun[i] - gamma[i] * perturb_factor * AbsAbun[i]; // logistic growth
+        for (int j = 0; j < num_species; j++) {
+            dAbsAbun_dt[i] += eps[i][j] * AbsAbun[i] * AbsAbun[j]; // Interaction term
+            // std::cout<< dAbsAbun_dt[i] << std::endl;
+        }
+    }
+}
+
+
+// Runge-Kutta 4th order method for solving ODEs for linear perturbation
+void rk4_step_lotka_volterra_w_perturbation(std::vector<double>& AbsAbun, double t, double dt, 
+            const std::vector<double>& alpha,
+            const std::vector<std::vector<double>>& eps,
+            const std::vector<double>& gamma,
+            double pertub_factor) {
+    int n = AbsAbun.size();
+    std::vector<double> k1(n), k2(n), k3(n), k4(n), AbsAbun_temp(n);
+
+    // k1 = f(AbsAbun, t)
+    lotka_volterra_w_perturbation(AbsAbun, k1, alpha, eps, gamma, pertub_factor);
+
+    // k2 = f(AbsAbun + dt/2 * k1, t + dt/2)
+    for (int i = 0; i < n; i++) AbsAbun_temp[i] = AbsAbun[i] + dt / 2.0 * k1[i];
+    lotka_volterra_w_perturbation(AbsAbun_temp, k2, alpha, eps, gamma, pertub_factor);
+
+    // k3 = f(AbsAbun + dt/2 * k2, t + dt/2)
+    for (int i = 0; i < n; i++) AbsAbun_temp[i] = AbsAbun[i] + dt / 2.0 * k2[i];
+    lotka_volterra_w_perturbation(AbsAbun_temp, k3, alpha, eps, gamma, pertub_factor);
+
+    // k4 = f(AbsAbun + dt * k3, t + dt)
+    for (int i = 0; i < n; i++) AbsAbun_temp[i] = AbsAbun[i] + dt * k3[i];
+    lotka_volterra_w_perturbation(AbsAbun_temp, k4, alpha, eps, gamma, pertub_factor);
+
+    // Update AbsAbun using the RK4 formula
+    for (int i = 0; i < n; i++) {
+        AbsAbun[i] += dt / 6.0 * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]);
+    }
+}
+
 
 
 
