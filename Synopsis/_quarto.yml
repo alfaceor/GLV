@@ -1,0 +1,32 @@
+project:
+  type: book
+
+book:
+  title: "Synopsis"
+  author: "Carlos Olivares"
+  date: "12/18/2025"
+  chapters:
+    - index.qmd
+    - intro.qmd
+    - summary.qmd
+    - references.qmd
+  appendices: 
+    - appendices/GIT.qmd
+
+bibliography: ../Bibliography/GLV_references.bib
+csl: physical-review-letters.csl
+# filters:
+#   - add-file-links.lua
+link-citations: true
+citeproc: true
+
+format:
+  html:
+    theme:
+      - cosmo
+      - brand
+  pdf:
+    documentclass: scrreprt
+
+
+

@@ -1,0 +1,29 @@
+# Gastro-Intestinal Tract {#sec-GIT}
+
+Here make a description using simple calculations about the physical properties of the gastro intestical tract
+
+
+<!-- TODO: Rephrase, make illustrations and explicit calculations -->
+
+
+@gut_2017_IntroGutMicrobiota_Review
+
+- The human gastrointestinal (GI) tract represents one of the largest interfaces ($ 250–400 m^2$ ) between
+the host, environmental factors and antigens in the human body. In an average life time, around
+60 tonnes of food pass through the human GI tract, along with an abundance of microorganisms
+from the environment which impose a huge threat on gut integrity
+
+
+- The
+number of microorganisms inhabiting the GI tract has been estimated to exceed $10^{14}$ , which encom-
+passes ∼10 times more bacterial cells than the number of human cells and over 100 times the amount
+of genomic content (microbiome) as the human genome [2,4]. However, a recently revised estimate
+has suggested that the ratio of human:bacterial cells is actually closer to 1:1 [5]. As a result of the vast
+number of bacterial cells in the body, the host and the microorganisms inhabiting it are often referred
+to as a ‘superorganism’ [4,6].
+
+
+- The collection of bacteria,
+archaea and eukarya colonising the GI tract is termed the ‘gut microbiota’ and has co-evolved with
+the host over thousands of years to form an intricate and mutually beneficial relationship
+

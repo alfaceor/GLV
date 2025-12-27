@@ -1,0 +1,86 @@
+# Introduction
+
+## Motivation
+
+### Objective
+
+- Improve people's health and well being.
+
+### What are the motivations for this work?
+
+ what are the main factors to get a good health? and how to maintain homeostasis[^1]
+
+[^1]: homeostasis comes from two ancient Greek words meaning “equal” and “holding still” then maintain a state of balance or equilibrium.
+
+ - 4 pillars of good health:
+    - Nutrition
+    - Physical activity
+    - Sleep
+    - Behavioral health
+ <!-- TODO: -->
+ - Reduce inequalities social aspect.
+
+ - Thermodynamics and life as organic machine:
+    - What is life Schrodinger? @b_1992_ErwinSchrodinger_WhatIsLife
+    - From microscopic to macroscopic observables (Statistical Physics)
+
+### What is a healthy microbiota?
+
+- Is there an ideal gut microbiota composition?@gut_2019_Rinninella_microorganisms
+    - Each individual is provided with a unique gut microbiota profile that plays many specific functions in host nutrient metabolism, maintenance of structural integrity of the gut mucosal barrier,
+immunomodulation, and protection against pathogens
+    - However, a healthy host–microorganism
+balance must be respected in order to optimally perform metabolic and immune functions and
+prevent disease development
+
+### Why the Gut microbiota?
+
+To get details about the gut microbiota environment checkout the section @sec-GIT
+
+- Gut-microbiota-targeted diets modulate human
+immune status @gut_2021_Sonnenburg_Cell
+- Short-cahin fatty acids: linking diet, the microbiome and immunity @gut_2024_MannLamUhig_NatureReviewsImmunology.
+- Nutrition role @nut_2025_SanzVeiga_NatureReviews
+-   Gut microbiota has multiple roles and acts as new organ that is specific for different people's and dependent on multiple internal and external factors
+-   Is a largely diverse and complex system, which make it difficult to analyse.
+-   The modulation of the gut microbiota composition could help to adpat the immune system, the way the nutrients are absord, and impacts on the absorption of the antibiotics or some other treatments.
+-   Antibiotic resistance
+
+### What are the physical properties of GIT? {.appendix}
+
+- How long it is?
+- What is the human adult volumen distribution?
+- Compare it to other species in size.
+- Estimate the number of bacteria
+
+### Gut microbiota
+
+Around two decades ago, our knowledge of the adult human gut microbiota came from labour-intesive culture-based methods
+
+### Adaptive immune system connection
+
+## Mathematical Models
+
+### Bacteria dynamics
+
+-   Times and orders of magnitude
+-   Multiples scales in bacteria dynamics (internal and external mechanisms)
+-   Taxonomy
+-   Interactions: (Competition, mutualism, etc)
+
+
+### Theoretical Ecology
+
+<!-- TODO: add references here -->
+- Random matrix formalism  and techniques from disordered systems.
+- MacArthur/Resource-Consumer model and Generalized Lotka-Volterra model
+
+### Resource-Consumer model
+
+
+
+### Lotka-Volterra
+
+\begin{equation}
+\frac{d}{dt} n_{i} = \alpha_{i}(1-n_{i}) n_{i}
+\end{equation}
