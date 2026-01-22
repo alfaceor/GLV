@@ -1,0 +1,203 @@
+# Some important distributions
+
+
+```{python}
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy import stats
+
+###### BEGIN PLOT DECORATION VARIABLES 
+font = {'family': 'normal',
+        'weight': 'bold',
+        'size': 14}
+plt.rc('font', **font)
+plt.rc('text', usetex=True)
+###### END PLOT DECORATION VARIABLES
+```
+
+## Binomial
+
+<!-- TODO: Add the definition, explanation and intution of the binomial distribution, galton board figure perhaps? -->
+Here there is the binomial distribution @eq-binomial 
+$$
+P(x|n) = {n \choose k} p^{x} \left(1 - p \right)^{n-x}
+% \binom{n}{k}
+$$ {#eq-binomial}
+
+The generating moment function for the @eq-binomial-mgf distribution will be
+
+$$
+\begin{aligned}
+M(t) &= \sum_{x}^{n} e^{xt} {n \choose k} p^{x} \left(1 - p \right)^{n-x} \\
+&= \sum_{x}^{n} {n \choose k} \left(e^{t} p\right)^{x} \left(1 - p \right)^{n-x} \\
+&= \left( (1-p) + e^{t} p \right)^n
+\end{aligned}
+$$ {#eq-binomial-mgf}
+
+
+
+
+```{python}
+#| label: fig-binomial-mgf
+#| fig-cap: "Binomial probability mass function "
+
+cm_color = mpl.colormaps['plasma']
+fig, ax = plt.subplots(figsize=(6, 3.5))
+
+p_s = np.arange(0.2, 1, 0.2)
+N_s = 10
+nn = np.arange(N_s+1)
+
+lbl_x = r"$p$"
+lbl_y = r"p.m.f."
+lbl_title_legend =r"$p_{i}$"
+for p_s_i in p_s:
+    # print(p_s_i)
+    lbl_tmp = f"{p_s_i:0.1g}"
+    pp = stats.binom.pmf(nn, N_s, p_s_i)
+    ax.plot(nn, pp, label=lbl_tmp, color=cm_color(p_s_i), alpha=0.8)
+handles, labels = ax.get_legend_handles_labels()
+# ax.legend(title=lbl_title_legend)
+ax.set(
+    xlabel = lbl_x, ylabel = lbl_y
+)
+
+fig.legend(
+    handles, labels, handlelength=0.75,
+    bbox_to_anchor=(0.5, 0.0), loc='upper center',
+    ncols=5,
+    frameon=False
+    )
+
+```
+
+## Normal distribution
+
+For the limit of $n \to \infty$ we get
+
+TODO: add central limit theorem and a simple deduction
+
+$$
+\begin{aligned}
+\lim_{n \to \infty} P(x|n) &= \lim_{n \to \infty} \frac{n!}{(n-x)! x!}
+p^{x} (1-p)^{n-x} \\
+&\dots \\
+&= \frac{1}{\sqrt{2 \pi \sigma^2} } 
+\exp\left( -\frac{ \left( x - \mu \right)^{2} }{2 \sigma^2} \right) 
+\end{aligned}
+$$ {#eq-normal-pdf}
+
+
+
+## Poissonian distribution
+
+TODO:Gaussian is not good for small values of $p$ 
+
+Now, if before taking the number of attemps to infinity we take the probability of success $p \to 0$ and maning this change of variable $\lambda = n \times p$
+ 
+
+$p(x, n) = \lim_{n \to \infty} \lim_{p \to 0} \frac{n(n-1)\dots(n-x+1)}{x! }  \frac{\lambda^{x}}{n^{x}} (1-\frac{\lambda}{n})^{n}(1-p)^{-x}$
+
+$\lim_{n \to \infty} (1-\frac{\lambda}{n})^n = e^{-\lambda}$
+
+we obtain a poisson distribution
+
+
+
+
+$$ 
+p(x, \lambda) = \frac{\lambda^{x}}{x!} e^{-\lambda}
+$$ {#eq-poisson-pdf}
+
+The @eq-poisson-pdf give us the probability of a rare event, with $p$ occurs $x$ times, where $\lambda$ is the mean value of $x$ 
+
+
+## Geometric distribution
+
+- Discrete memoryless property
+First success in $n$ trials of Bernoulli events with probability $p$
+$$
+geometric = p (1-p)^{n-1}
+$$ {#eq-geometric}
+<!-- ## Multiple dimensions of binomial -->
+
+the corresponding moment generation function (mgf) 
+
+$$
+M(t) = \frac{p}{e^{-t} - (1-p)}
+$$ {#eq-geometric-mgf}
+
+
+
+
+## Exponential distribution
+
+- Exponential distribution describes the waiting time until the first event occurs in a Poisson distribution.
+- Memoryless $P(T > t+s|T>s) = P(T>t)$
+- The number of events in a time $\delta t$ has a poisson distribution.
+
+lifetimes, radioactive elements decays
+
+$$
+P (T = t) = \lambda e^{-\lambda t}
+$$ {#eq-exponential-pdf}
+
+
+
+
+## Hazard Rate
+
+$$
+\begin{aligned}
+P(T \le t+dt |T>t) &= 1 - P( T > t+dt |T>t ) \\
+&= 1 - P( T > t+dt |T>t ) \text{Memoryless}\\
+&= 1 - P(T>dt) \\
+&= 1 - e^{-\lambda dt} \\
+&\simeq \lambda dt 
+\end{aligned}
+$$ {#eq-hazard-rate}
+
+
+
+## Gamma distribution
+
+Waiting times for the $r$th arrival
+
+$$
+T_{r} = \omega_{1} + \omega_{2} + \ldots + \omega_{r}
+$$
+
+$$
+T_{r} \sim \text{Gamma}(r, \lambda)
+$$ {#eq-gamma-dist}
+
+$$
+\begin{aligned}
+P(T_{r} > t) &= P(N_{t} \le r-1) \\
+&= \sum_{k=0}^{r-1} \frac{e^{-\lambda t} (\lambda t)^k}{k!}
+\end{aligned}
+$$
+
+
+## Calculations
+
+
+$$
+P_{s}\left( \{ n. \} | N_{s} \right) =
+\frac{N_{s}!}{\prod_{i} n_i !}
+\prod_{i} \left( p_{i}^{s} \right)^{n_{i}}
+$$
+
+
+
+$$
+P_{s}\left( \{ n. \} | N_{s} \right) =
+\int [dp] \rho\left( \left\{ p. \right\} \right)
+\frac{N_{s}!}{\prod_{i} n_i !}
+\prod_{i} \left( p_{i}^{s} \right)^{n_{i}}
+$$
+
+
+
+

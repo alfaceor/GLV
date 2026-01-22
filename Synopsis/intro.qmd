@@ -71,6 +71,32 @@ Around two decades ago, our knowledge of the adult human gut microbiota came fro
 
 ### Theoretical Ecology
 
+
+#### Macroecological laws
+
+A fundamental and unresolved question in ecology is how many species can mantein coexistence? Are there macroecological laws, that are somehow similar to thermodynamic laws are a consequence of microscopic interactions that we can predict? @gLV_2020_Grilli_NatureCom
+
+- Typical conditions of ecological phenomena are quite difficult to track do to the large number of complex spatio-temporal conditions.
+- How can we disentagle the effect of multiple mechanisms in systems with a thousands of different species, under a different ecological forces like, enviromental fluctuations, cross-feeding, competition or demographic stochasticity.
+- Species abundance distributions (SAD)
+- @gLV_2020_Grilli_NatureCom shows that stochastic logistic growth model reproduces three macroecological laws, as well as the dynamic patterns in temporal data. The model also reflects that the taxonomic resolution commonly used competitive exclusion is rare and variation of species presence and abundance is mostly due to environmental fluctuations.
+- **Abundance fluctuations are gamma distributed** abundance fluctuation distribution (AFD)
+
+- why a Gamma distribution is the distribution for the abundance fluctuation distribution?
+
+TODO: proof that this relationship holds by showing the calculations on @gLV_2020_Grilli_NatureCom
+
+$$
+p_i (x) = \frac{1}{\Gamma(\beta_{i})}
+        \left( \frac{\beta_{i}}{\bar{x_{i}}} \right)^{\beta_{i}}
+        x^{\beta_{i} -1 } \exp \left( -\beta_{i} \frac{x}{\bar{x_{i}}} \right)
+$$
+
+where $\bar{x_{i}}$, $\beta_{i}$ fully characterize the AFD of each species.
+
+
+
+#### Other
 <!-- TODO: add references here -->
 - Random matrix formalism  and techniques from disordered systems.
 - MacArthur/Resource-Consumer model and Generalized Lotka-Volterra model
@@ -81,6 +107,29 @@ Around two decades ago, our knowledge of the adult human gut microbiota came fro
 
 ### Lotka-Volterra
 
-\begin{equation}
-\frac{d}{dt} n_{i} = \alpha_{i}(1-n_{i}) n_{i}
-\end{equation}
+$$
+\frac{d}{dt} n_{i} = 
+    \alpha_{i}\left(1-\frac{n_{i}}{k_{i}} \right) n_{i}
+    + \sum_{i \neq j}^{S} \epsilon_{i,j} n_{i} n_{j}
+$$
+
+What is the effect on numerical precision using $x_i = \ln n_i$?
+
+$$
+\frac{d}{dt} \ln n_{i} = 
+    \alpha_{i}\left(1-\frac{n_{i}}{k_{i}} \right)
+    + \sum_{i \neq j}^{S} \epsilon_{i,j} n_{j}
+$$
+
+
+$$
+\frac{d}{dt} \ln n_{i} = 
+    \alpha_{i}\left(1-\exp \ln \frac{ n_{i}}{k_{i}} \right)
+    + \sum_{i \neq j}^{S} \epsilon_{i,j} \exp \ln n_{j}
+$$
+
+$$
+\frac{d}{dt} x_{i} = 
+    \alpha_{i}\left(1-A \exp x_{i} \right)
+    + \sum_{i \neq j}^{S} \epsilon_{i,j} \exp x_{j}
+$$
