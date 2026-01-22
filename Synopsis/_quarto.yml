@@ -7,11 +7,16 @@ book:
   date: "12/18/2025"
   chapters:
     - index.qmd
+    # - summary.qmd
     - intro.qmd
-    - summary.qmd
+    - context.qmd
+    - methods.qmd
+    - results.qmd
+    # - discussion.qmd
     - references.qmd
   appendices: 
     - appendices/GIT.qmd
+    - appendices/ProbabilityDistributions.qmd
 
 bibliography: ../Bibliography/GLV_references.bib
 csl: physical-review-letters.csl
@@ -25,8 +30,14 @@ format:
     theme:
       - cosmo
       - brand
+    execute:
+      echo: false
+      warning: false
   pdf:
     documentclass: scrreprt
+    execute:
+      echo: false
+      warning: false
 
 
 
