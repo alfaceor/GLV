@@ -1,0 +1,942 @@
+---
+title: "Ecological Dynamics Inference Pipeline"
+subtitle: "Step-by-Step Development Instructions"
+author: "Project Team"
+date: today
+format:
+  pdf:
+    documentclass: scrreprt
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    colorlinks: true
+    highlight-style: github
+    geometry:
+      - margin=2.5cm
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    theme: cosmo
+    code-fold: false
+execute:
+  echo: false
+  eval: false
+bibliography: references.bib
+---
+
+# Overview and Goals
+
+This document provides complete, sequential instructions for building a scientific pipeline that simulates ecological community dynamics, prepares datasets, runs inference methods, and produces a reproducible report.
+
+The pipeline covers two ecological models, three experimental configurations each, two inference methods, and a final Quarto-based report. All intermediate results are stored in a single HDF5 file that acts as the shared data contract across all components and programming languages involved.
+
+**The pipeline has five stages:**
+
+1. Simulation — generate trajectories from each ecological model
+2. Data preparation — add noise, split into train/test sets
+3. Inference — fit NLME (R) and Neural ODE (Python) to the prepared data
+4. Evaluation — compute metrics on held-out test sets
+5. Report — read HDF5, generate figures, render document
+
+**Team responsibilities at a glance:**
+
+| Stage | Script | Language | Owner |
+|---|---|---|---|
+| Simulation | `simulate.py` | Python | Person A |
+| Data preparation | `prepare_data.py` | Python | Person A |
+| Inference — NLME | `inference/nlme_fit.R` | R | Person B |
+| Inference — Neural ODE | `inference/neural_ode_train.py` | Python | Person C |
+| Evaluation | `evaluate.py` | Python | Person A |
+| Report | `report/` | Quarto (Python + R) | Person D |
+
+---
+
+# Ecological Models
+
+## Generalized Lotka-Volterra (GLV)
+
+The GLV model describes the dynamics of $n$ species with abundances
+$\mathbf{x}(t) = (x_1, \ldots, x_n)^{\top}$. The equation of motion for
+species $i$ is:
+
+$$
+\frac{dx_i}{dt} = x_i \left( r_i + \sum_{j=1}^{n} A_{ij} x_j \right),
+\quad i = 1, \ldots, n
+$$
+
+where $r_i \in \mathbb{R}$ is the intrinsic growth rate of species $i$ and
+$A_{ij} \in \mathbb{R}$ is the interaction coefficient describing the effect
+of species $j$ on species $i$. The diagonal terms $A_{ii} < 0$ encode
+self-regulation (logistic damping). Off-diagonal terms encode ecological
+interactions: $A_{ij} > 0$ is facilitation, $A_{ij} < 0$ is competition or
+predation.
+
+The three experimental configurations for GLV are:
+
+- **`without_interactions`**: $A_{ij} = 0$ for $i \neq j$; species grow or
+  decay independently with logistic self-regulation only. This is the null
+  model and has an analytical solution per species.
+
+- **`mean_field`**: all off-diagonal entries are equal,
+  $A_{ij} = \bar{a}$ for $i \neq j$; species interact but all interactions
+  are identical. This tests whether the inference methods can recover a
+  single shared interaction strength.
+
+- **`with_interactions`**: $A$ is a sparse random matrix drawn from a
+  specified distribution (e.g. zero-mean Gaussian with standard deviation
+  $\sigma$). This is the ecologically realistic case.
+
+## Consumer-Resource MacArthur Model
+
+The MacArthur consumer-resource model describes $n$ consumer species with
+biomasses $\mathbf{N}(t)$ and $m$ resource species with concentrations
+$\mathbf{R}(t)$. The coupled equations are:
+
+$$
+\frac{dN_i}{dt} = N_i \left( \sum_{\alpha=1}^{m} c_{i\alpha} w_\alpha R_\alpha - m_i \right)
+$$
+
+$$
+\frac{dR_\alpha}{dt} = r_\alpha \left( K_\alpha - R_\alpha \right) - \sum_{i=1}^{n} c_{i\alpha} N_i R_\alpha
+$$
+
+where $c_{i\alpha} \geq 0$ is the consumption rate of consumer $i$ on
+resource $\alpha$, $w_\alpha > 0$ is the energy content of resource $\alpha$,
+$m_i > 0$ is the mortality rate of consumer $i$, $r_\alpha > 0$ is the
+resource renewal rate, and $K_\alpha > 0$ is the resource carrying capacity.
+
+The three experimental configurations for the MacArthur model are:
+
+- **`without_interactions`**: each consumer specialises on exactly one
+  resource ($c_{i\alpha} = 0$ for $\alpha \neq i$). Consumers do not compete
+  and there is no effective interaction through shared resource depletion.
+
+- **`mean_field`**: all consumers have equal and uniform consumption rates
+  across all resources, $c_{i\alpha} = \bar{c}$. This creates symmetric
+  competition mediated through shared resource depletion.
+
+- **`with_interactions`**: $c_{i\alpha}$ is drawn from a non-negative
+  distribution (e.g. Dirichlet or log-normal), creating heterogeneous
+  niche overlap and asymmetric competition.
+
+---
+
+# Project Structure
+
+The full directory layout expected at the end of the project is:
+
+```
+project/
+├── configs/
+│   ├── config.yaml
+│   ├── model/
+│   │   ├── glv.yaml
+│   │   └── macarthur.yaml
+│   ├── experiment/
+│   │   ├── glv/
+│   │   │   ├── without_interactions.yaml
+│   │   │   ├── mean_field.yaml
+│   │   │   └── with_interactions.yaml
+│   │   └── macarthur/
+│   │       ├── without_interactions.yaml
+│   │       ├── mean_field.yaml
+│   │       └── with_interactions.yaml
+│   ├── simulation/
+│   │   ├── coarse.yaml
+│   │   └── fine.yaml
+│   ├── data/
+│   │   ├── clean.yaml
+│   │   └── noisy.yaml
+│   └── inference/
+│       ├── nlme.yaml
+│       └── neural_ode.yaml
+│
+├── models/
+│   ├── __init__.py
+│   ├── glv.py
+│   └── macarthur.py
+│
+├── inference/
+│   ├── __init__.py
+│   ├── base.py
+│   ├── neural_ode_train.py
+│   └── nlme_fit.R
+│
+├── simulate.py
+├── prepare_data.py
+├── train.py
+├── evaluate.py
+├── compare.py
+│
+├── report/
+│   ├── _quarto.yml
+│   ├── report.qmd
+│   ├── chapters/
+│   │   ├── 01_introduction.qmd
+│   │   ├── 02_methods.qmd
+│   │   ├── 03_simulations.qmd
+│   │   ├── 04_inference.qmd
+│   │   └── 05_comparison.qmd
+│   └── src/
+│       ├── load_hdf5.py
+│       ├── load_hdf5.R
+│       └── plot_styles.py
+│
+└── results.h5
+```
+
+---
+
+# HDF5 Schema
+
+`results.h5` is the shared data contract for the entire project. Every script
+reads from and writes to this file. **No script may modify a section of the
+file owned by another script.** The complete schema is as follows.
+
+## Top-level groups
+
+```
+results.h5
+├── simulations/
+├── datasets/
+└── inference/
+```
+
+## `simulations/` — written by `simulate.py`
+
+```
+simulations/
+├── glv/
+│   ├── without_interactions/
+│   │   ├── @model              string attribute: "glv"
+│   │   ├── @experiment         string attribute: "without_interactions"
+│   │   ├── @n_species          int attribute
+│   │   ├── @r                  array attribute: intrinsic growth rates
+│   │   ├── @A_diag             array attribute: self-regulation terms
+│   │   ├── @dt, @t_end         float attributes
+│   │   ├── @config_yaml        string attribute: full resolved YAML config
+│   │   └── numerical/
+│   │       ├── t               dataset (float64, shape: [T])
+│   │       └── X               dataset (float64, shape: [T, n_species])
+│   ├── mean_field/
+│   │   ├── @a_mean             float attribute: shared off-diagonal value
+│   │   ├── ... (same as above plus)
+│   │   └── numerical/
+│   │       ├── t
+│   │       └── X
+│   └── with_interactions/
+│       ├── @A_matrix           dataset: full interaction matrix [n, n]
+│       ├── @sigma              float attribute: interaction std
+│       ├── ... (same as above plus)
+│       └── numerical/
+│           ├── t
+│           └── X
+└── macarthur/
+    ├── without_interactions/
+    │   ├── @model, @experiment
+    │   ├── @n_consumers, @n_resources
+    │   ├── @m, @w, @r, @K      array attributes: mortality, energy, renewal, capacity
+    │   ├── @dt, @t_end, @config_yaml
+    │   └── numerical/
+    │       ├── t               dataset (float64, shape: [T])
+    │       ├── N               dataset (float64, shape: [T, n_consumers])
+    │       └── R               dataset (float64, shape: [T, n_resources])
+    ├── mean_field/
+    │   ├── @c_mean             float attribute: shared consumption rate
+    │   ├── ...
+    │   └── numerical/
+    │       ├── t, N, R
+    └── with_interactions/
+        ├── @C_matrix           dataset: consumption matrix [n_consumers, n_resources]
+        ├── ...
+        └── numerical/
+            ├── t, N, R
+```
+
+**Note on state variables:** GLV has one state matrix $X$ (species abundances).
+MacArthur has two, $N$ (consumers) and $R$ (resources). Every downstream
+script must check `@model` to know which datasets to load.
+
+## `datasets/` — written by `prepare_data.py`
+
+```
+datasets/
+├── glv/
+│   ├── without_interactions/
+│   │   ├── clean/
+│   │   │   ├── @noise_std      float attribute: 0.0
+│   │   │   ├── @train_fraction float attribute
+│   │   │   ├── @seed           int attribute
+│   │   │   ├── train/
+│   │   │   │   ├── t           dataset
+│   │   │   │   └── X           dataset
+│   │   │   └── test/
+│   │   │       ├── t
+│   │   │       └── X
+│   │   └── noisy/
+│   │       ├── @noise_std, @train_fraction, @seed
+│   │       ├── train/
+│   │       │   ├── t, X
+│   │       └── test/
+│   │           ├── t, X
+│   ├── mean_field/
+│   │   └── ... (same structure)
+│   └── with_interactions/
+│       └── ... (same structure)
+└── macarthur/
+    └── ... (same structure, with N and R instead of X)
+```
+
+**Critical rule:** the train/test split indices are determined once in
+`prepare_data.py` and written to HDF5. Neither `nlme_fit.R` nor
+`neural_ode_train.py` may recompute or modify the split. Both methods
+must train on exactly the same data.
+
+## `inference/` — written by `nlme_fit.R` and `neural_ode_train.py`
+
+```
+inference/
+├── glv/
+│   ├── without_interactions/
+│   │   ├── clean/
+│   │   │   ├── nlme/
+│   │   │   │   ├── @language           "R"
+│   │   │   │   ├── @r_version          string
+│   │   │   │   ├── @config_yaml        full config as string
+│   │   │   │   ├── @train_time_s       float
+│   │   │   │   ├── @converged          bool
+│   │   │   │   ├── fitted_params/
+│   │   │   │   │   ├── fixed_effects   dataset: named parameter estimates
+│   │   │   │   │   └── random_effects  dataset: per-species random deviations
+│   │   │   │   ├── predictions/
+│   │   │   │   │   ├── t               dataset
+│   │   │   │   │   └── X_pred          dataset [T, n_species]
+│   │   │   │   └── metrics/
+│   │   │   │       ├── @rmse           float
+│   │   │   │       ├── @mae            float
+│   │   │   │       ├── @r2             float
+│   │   │   │       ├── @aic            float (NLME-specific)
+│   │   │   │       └── @bic            float (NLME-specific)
+│   │   │   └── neural_ode/
+│   │   │       ├── @language           "Python"
+│   │   │       ├── @python_version     string
+│   │   │       ├── @config_yaml        full config as string
+│   │   │       ├── @train_time_s       float
+│   │   │       ├── @epochs_trained     int
+│   │   │       ├── @n_params           int (model complexity)
+│   │   │       ├── weights/
+│   │   │       │   └── checkpoint      dataset: serialized bytes
+│   │   │       ├── training_curves/
+│   │   │       │   ├── epoch           dataset
+│   │   │       │   └── loss            dataset
+│   │   │       ├── predictions/
+│   │   │       │   ├── t
+│   │   │       │   └── X_pred
+│   │   │       └── metrics/
+│   │   │           ├── @rmse, @mae, @r2
+│   │   │           └── @n_params
+│   │   └── noisy/
+│   │       ├── nlme/     ... (same structure)
+│   │       └── neural_ode/ ... (same structure)
+│   ├── mean_field/
+│   │   └── ... (same structure)
+│   └── with_interactions/
+│       └── ... (same structure)
+└── macarthur/
+    └── ... (same structure, X_pred replaced by N_pred and R_pred)
+```
+
+**Path convention summary:**
+
+```
+simulations / {model} / {experiment} / numerical /
+datasets    / {model} / {experiment} / {data_config} / {split} /
+inference   / {model} / {experiment} / {data_config} / {method} /
+```
+
+This convention is the single most important design decision in the project.
+Every script must follow it exactly.
+
+---
+
+# Stage 1 — Configuration Files
+
+**Owner: Person A**
+
+## Step 1.1 — Install dependencies
+
+Install the required Python packages:
+
+```
+hydra-core
+omegaconf
+scipy
+numpy
+h5py
+```
+
+## Step 1.2 — Write `configs/config.yaml`
+
+This is the root config file that Hydra reads. It declares the `defaults`
+list — which sub-configs to load by default — and any top-level keys that
+are not model-specific.
+
+The file must contain:
+
+- A `defaults` list that pulls in one entry from each of `model/`,
+  `experiment/`, `simulation/`, `data/`, and `inference/`
+- A `simulation` section with `t_start`, `t_end`, and `dt`
+- An `output` section with the `hdf5_file` path
+
+## Step 1.3 — Write `configs/model/glv.yaml`
+
+This file defines the parameters that belong to the GLV model itself,
+independent of any specific experiment. It must include:
+
+- `name: glv`
+- `n_species`: number of species
+- `r`: a list of intrinsic growth rates (one per species)
+- `self_regulation`: the diagonal value $A_{ii}$ applied to all species
+
+## Step 1.4 — Write `configs/model/macarthur.yaml`
+
+This file defines the parameters for the MacArthur model. It must include:
+
+- `name: macarthur`
+- `n_consumers` and `n_resources`
+- `m`: list of mortality rates (one per consumer)
+- `w`: list of resource energy contents (one per resource)
+- `r_resource`: list of resource renewal rates
+- `K`: list of resource carrying capacities
+
+## Step 1.5 — Write the six experiment config files
+
+Each experiment file lives under `configs/experiment/{model}/` and specifies
+only the parameters that vary across experiments for that model. Each file
+must include a `name` field matching its filename.
+
+**GLV experiments:**
+
+- `without_interactions.yaml` — sets all off-diagonal $A_{ij} = 0$; provide
+  initial conditions $x_0$ for each species
+- `mean_field.yaml` — sets a single shared off-diagonal value `a_mean`;
+  provide initial conditions
+- `with_interactions.yaml` — sets `sigma` (standard deviation of the
+  interaction distribution) and a `seed` for reproducibility; provide
+  initial conditions
+
+**MacArthur experiments:**
+
+- `without_interactions.yaml` — sets `c_mode: specialist` (diagonal
+  consumption matrix); provide initial consumer and resource abundances
+- `mean_field.yaml` — sets `c_mode: uniform` and a single `c_mean` value;
+  provide initial conditions
+- `with_interactions.yaml` — sets `c_mode: random`, a `c_scale` parameter,
+  and a `seed`; provide initial conditions
+
+## Step 1.6 — Write `configs/simulation/coarse.yaml` and `fine.yaml`
+
+Each file overrides `simulation.dt` and `simulation.t_end`:
+
+- `coarse.yaml`: larger `dt`, shorter `t_end` — used for rapid testing
+- `fine.yaml`: smaller `dt`, longer `t_end` — used for production runs
+
+## Step 1.7 — Write `configs/data/clean.yaml` and `noisy.yaml`
+
+Each file specifies how to transform raw simulation output into an
+inference-ready dataset:
+
+- `clean.yaml`: `noise_std: 0.0`, `train_fraction`, `seed`
+- `noisy.yaml`: `noise_std > 0`, `sampling_rate` (keep every Nth time point
+  to simulate sparse observations), `train_fraction`, `seed`
+
+## Step 1.8 — Write `configs/inference/nlme.yaml` and `neural_ode.yaml`
+
+- `nlme.yaml`: `name: nlme`, list of `fixed_effects` parameter names, list
+  of `random_effects` parameter names, `optimizer`, `max_iter`
+- `neural_ode.yaml`: `name: neural_ode`, `hidden_dim`, `depth`, `solver`,
+  `lr`, `epochs`, `seed`
+
+---
+
+# Stage 2 — Simulation
+
+**Owner: Person A**
+
+## Step 2.1 — Write `physics/glv.py`
+
+This module must contain a single function that implements the GLV ODE
+right-hand side. It receives the current state vector $\mathbf{x}$, the
+time $t$, and the parameters $\mathbf{r}$ and $\mathbf{A}$, and returns
+$d\mathbf{x}/dt$ as a numpy array. No file I/O should occur in this module.
+
+For the `without_interactions` experiment, the off-diagonal entries of
+$\mathbf{A}$ are zero, so the ODE reduces to $n$ independent logistic
+equations. The module should not special-case this — the general formula
+handles it automatically when $A_{ij} = 0$ for $i \neq j$.
+
+## Step 2.2 — Write `physics/macarthur.py`
+
+This module must contain a single function that implements the MacArthur
+coupled ODE right-hand side. It receives the concatenated state vector
+$[\mathbf{N}, \mathbf{R}]$, the time $t$, and the parameters
+$\mathbf{c}$, $\mathbf{w}$, $\mathbf{m}$, $\mathbf{r}$, $\mathbf{K}$, and
+returns the concatenated derivative $[d\mathbf{N}/dt, d\mathbf{R}/dt]$ as a
+numpy array.
+
+The function must split the input state vector correctly into the consumer
+and resource parts before computing derivatives.
+
+## Step 2.3 — Write `simulate.py`
+
+This is the Hydra entry point for all simulations. It must:
+
+1. Be decorated with `@hydra.main` pointing to `configs/` with
+   `config_name="config"`
+2. Read `cfg.model.name` and dispatch to the correct physics module using a
+   registry dictionary — do not use `if/elif` chains
+3. Build the interaction matrix or consumption matrix from the experiment
+   config. For `with_interactions` experiments, use `cfg.experiment.seed` to
+   set the random state before drawing from the distribution, so the run is
+   reproducible
+4. Call `scipy.integrate.solve_ivp` with method `RK45`, using
+   `cfg.simulation.dt` and `cfg.simulation.t_end`
+5. Write results to HDF5 under the path
+   `simulations/{model}/{experiment}/numerical/`
+6. Store all config parameters as HDF5 attributes on the group, including
+   the full YAML string obtained via `OmegaConf.to_yaml(cfg)`
+7. For GLV `without_interactions` only, also write an `analytical/` subgroup
+   containing the exact per-species logistic solution for later validation
+
+The HDF5 file must be opened in **append mode** (`"a"`) so that successive
+runs accumulate results. If the target group already exists, delete it before
+writing to allow clean reruns.
+
+## Step 2.4 — Run all simulations
+
+Run the following sweep to generate all six simulation groups:
+
+```bash
+python simulate.py --multirun \
+    model=glv,macarthur \
+    experiment=without_interactions,mean_field,with_interactions \
+    simulation=fine
+```
+
+After this step, verify that `results.h5` contains all six groups under
+`simulations/` before proceeding.
+
+---
+
+# Stage 3 — Data Preparation
+
+**Owner: Person A**
+
+## Step 3.1 — Write `prepare_data.py`
+
+This script reads from `simulations/` in HDF5 and writes to `datasets/`.
+It must:
+
+1. Accept a Hydra config that includes `model`, `experiment`, `data`, and
+   `output` sections
+2. Load the trajectory from
+   `simulations/{model}/{experiment}/numerical/`
+3. If `cfg.data.noise_std > 0`, add independent Gaussian noise with standard
+   deviation `cfg.data.noise_std` to all state variables. Use `cfg.data.seed`
+   to set the random state before adding noise
+4. If `cfg.data.sampling_rate > 1`, subsample the time axis by keeping
+   every `sampling_rate`-th time point
+5. Split the (possibly noisy, possibly subsampled) time series into train
+   and test sets according to `cfg.data.train_fraction`. The split must be
+   along the time axis — the first fraction of time points go to train, the
+   remainder to test. Do not shuffle
+6. Write `train/` and `test/` subgroups under
+   `datasets/{model}/{experiment}/{data_config}/`
+7. Store `@noise_std`, `@train_fraction`, `@seed`, and `@sampling_rate` as
+   attributes on the group
+
+## Step 3.2 — Run data preparation for all combinations
+
+```bash
+python prepare_data.py --multirun \
+    model=glv,macarthur \
+    experiment=without_interactions,mean_field,with_interactions \
+    data=clean,noisy
+```
+
+After this step, verify that `results.h5` contains all twelve dataset groups
+under `datasets/` before proceeding.
+
+---
+
+# Stage 4 — Inference
+
+## Step 4.1 — Write `inference/base.py`
+
+**Owner: Person C**
+
+This module defines the abstract interface that all Python inference methods
+must implement. It must contain an abstract base class with three methods:
+
+- `fit(cfg, train_data)` — receives the Hydra config and a dictionary of
+  numpy arrays from the train split; fits the model; stores fitted parameters
+  internally
+- `predict(t)` — receives a time array; returns predicted state as a numpy
+  array of the same shape as the training state
+- `save(hdf5_group)` — receives an open HDF5 group; writes fitted parameters,
+  predictions, and any method-specific outputs to that group; writes all
+  scalar metrics as HDF5 attributes on a `metrics/` subgroup
+
+## Step 4.2 — Write `train.py`
+
+**Owner: Person A**
+
+This is the Hydra entry point for all inference runs. It must:
+
+1. Accept a config that includes `model`, `experiment`, `data`, `inference`,
+   and `output` sections
+2. Read the resolved config and write it to a temporary `resolved_config.json`
+   file using `json.dump(OmegaConf.to_container(cfg, resolve=True))`
+3. Load the train split from
+   `datasets/{model}/{experiment}/{data_config}/train/` in HDF5
+4. Dispatch to the correct method:
+   - If `cfg.inference.name == "neural_ode"`: import and call
+     `inference.neural_ode_train` directly within Python
+   - If `cfg.inference.name == "nlme"`: call `subprocess.run` to execute
+     `Rscript inference/nlme_fit.R --config resolved_config.json`,
+     with `check=True` so that any R error raises a Python exception
+5. After the subprocess returns, verify that the expected HDF5 group
+   `inference/{model}/{experiment}/{data_config}/nlme/` exists and is
+   non-empty. If not, raise an informative error
+
+## Step 4.3 — Write `inference/nlme_fit.R`
+
+**Owner: Person B**
+
+This R script is called by `train.py` via `subprocess`. It must:
+
+1. Parse the `--config` argument from the command line using `commandArgs`
+2. Read the JSON config file using `jsonlite::fromJSON`
+3. Open `results.h5` and read the train split from
+   `datasets/{model}/{experiment}/{data_config}/train/`
+4. Reshape the data appropriately for the `nlme` or `nlme`-compatible
+   package being used
+5. Specify the nonlinear mixed effects model. The fixed effects are the
+   population-level parameters listed in `cfg$inference$fixed_effects`.
+   The random effects are the individual-level deviations listed in
+   `cfg$inference$random_effects`
+6. Fit the model using the optimizer specified in `cfg$inference$optimizer`
+7. Generate predictions on the **test** time grid, which must be loaded from
+   `datasets/{model}/{experiment}/{data_config}/test/t`
+8. Write results to HDF5 under
+   `inference/{model}/{experiment}/{data_config}/nlme/` using the `hdf5r`
+   package. The following must be written:
+   - `fitted_params/fixed_effects` dataset
+   - `fitted_params/random_effects` dataset
+   - `predictions/t` and `predictions/X_pred` (or `N_pred`, `R_pred` for
+     MacArthur) datasets
+   - `metrics/` subgroup with `@rmse`, `@mae`, `@r2`, `@aic`, `@bic`
+     attributes
+   - `@language`, `@r_version`, `@config_yaml`, `@train_time_s`,
+     `@converged` attributes on the top-level group
+9. Exit with code 0 on success and a non-zero code on any error so that
+   `train.py` can detect failures
+
+**Important:** the R script must never recompute the train/test split. It
+reads the split that `prepare_data.py` already wrote to HDF5.
+
+## Step 4.4 — Write `inference/neural_ode_train.py`
+
+**Owner: Person C**
+
+This module implements the Neural ODE inference method. It must follow the
+interface defined in `inference/base.py`. Key requirements:
+
+1. The neural network approximates the vector field $f_\theta$ such that
+   $d\mathbf{x}/dt \approx f_\theta(\mathbf{x})$
+2. The ODE is solved during training using a differentiable ODE solver
+   (e.g. `torchdiffeq` with the `dopri5` solver specified in the config)
+3. The loss is the mean squared error between predicted and observed
+   trajectories on the train split
+4. The architecture is fully specified by `cfg.inference.hidden_dim` and
+   `cfg.inference.depth` — no hardcoded layer counts
+5. Training uses the learning rate `cfg.inference.lr` and runs for
+   `cfg.inference.epochs` epochs
+6. Loss at each epoch must be stored in a list and written as a dataset to
+   `training_curves/loss` in HDF5
+7. The trained model weights must be serialized and stored as a byte dataset
+   under `weights/checkpoint`
+8. The `save` method must write to
+   `inference/{model}/{experiment}/{data_config}/neural_ode/` and must
+   include all attributes listed in the schema in @sec-hdf5
+
+## Step 4.5 — Run all inference combinations
+
+```bash
+python train.py --multirun \
+    model=glv,macarthur \
+    experiment=without_interactions,mean_field,with_interactions \
+    data=clean,noisy \
+    inference=nlme,neural_ode
+```
+
+This produces 24 inference runs (2 models × 3 experiments × 2 data configs
+× 2 methods). After this step, verify all 24 groups exist under `inference/`
+before proceeding.
+
+---
+
+# Stage 5 — Evaluation
+
+**Owner: Person A**
+
+## Step 5.1 — Write `evaluate.py`
+
+This script computes metrics from stored predictions and writes them back to
+the `metrics/` subgroup of each inference group. It must:
+
+1. Walk the HDF5 tree under `inference/` and find every group that contains
+   a `predictions/` subgroup but whose `metrics/` subgroup is missing or
+   incomplete
+2. For each such group, load the predictions and the corresponding test set
+   from `datasets/{model}/{experiment}/{data_config}/test/`
+3. Compute RMSE, MAE, and $R^2$ between predicted and observed trajectories
+   on the test set, averaged across all species or state variables
+4. Write these as attributes `@rmse`, `@mae`, `@r2` on the `metrics/`
+   subgroup. Do not overwrite `@aic` or `@bic` if they already exist — those
+   are written by the R script and are not recomputable from predictions alone
+5. Print a summary table to stdout showing all completed metric computations
+
+## Step 5.2 — Write `compare.py`
+
+This script produces the cross-method comparison. It must:
+
+1. Walk `inference/` recursively and collect every group whose path depth
+   matches `inference/{model}/{experiment}/{data_config}/{method}/`
+2. For each such group, read `@rmse`, `@mae`, `@r2` from `metrics/` and
+   `@model`, `@experiment`, `@data_config`, `@method` (or reconstruct these
+   from the path)
+3. Build a pandas DataFrame with one row per inference run
+4. Print the DataFrame sorted by model, experiment, data config, and RMSE
+5. Optionally save the DataFrame to `comparison_table.csv`
+
+---
+
+# Stage 6 — Report
+
+**Owner: Person D**
+
+## Step 6.1 — Write `report/src/load_hdf5.py`
+
+A helper module with convenience functions for loading data from `results.h5`.
+It must expose at minimum:
+
+- `load_simulation(model, experiment)` — returns a dictionary with `t` and
+  the state arrays
+- `load_dataset(model, experiment, data_config, split)` — returns train or
+  test data
+- `load_predictions(model, experiment, data_config, method)` — returns `t`
+  and predicted state
+- `load_metrics(model, experiment, data_config, method)` — returns a
+  dictionary of scalar metrics
+- `collect_all_metrics()` — walks `inference/` and returns a pandas DataFrame
+  of all metrics across all runs
+
+## Step 6.2 — Write `report/src/load_hdf5.R`
+
+The R equivalent of the above, using `hdf5r`. It must expose the same logical
+functions so that R chunks in the Quarto document can load data without
+repeating boilerplate.
+
+## Step 6.3 — Write `report/_quarto.yml`
+
+The project-level Quarto configuration. It must specify:
+
+- `project: type: book` for a thesis or `type: article` for a paper
+- Output formats: `pdf` with `documentclass: scrreprt` and `html` with
+  `theme: cosmo`
+- `execute: freeze: auto` so that code chunks are only rerun when their
+  source changes
+- `execute: cache: true` so that expensive HDF5 reads are cached between
+  renders
+- A `bibliography` field pointing to `references.bib`
+
+## Step 6.4 — Write `report/chapters/01_introduction.qmd`
+
+This chapter requires no HDF5 reads. It must cover:
+
+- Motivation for studying ecological community dynamics
+- A brief description of the GLV and MacArthur models with their defining
+  equations (copy from @sec-models of this document as a starting point)
+- A statement of the inference problem: given observed trajectories, recover
+  the underlying model parameters
+- An overview of the two inference approaches (NLME and Neural ODE) and why
+  comparing them is scientifically interesting
+
+## Step 6.5 — Write `report/chapters/02_methods.qmd`
+
+This chapter documents the pipeline. It must include:
+
+- The full mathematical specification of both ODEs with all parameters defined
+- A description of the three experimental configurations and what
+  ecological scenario each represents
+- A description of the data preparation procedure (noise model, subsampling,
+  train/test split)
+- A description of the NLME model specification: which parameters are fixed
+  effects, which are random effects, and what distributional assumption is
+  made on the random effects
+- A description of the Neural ODE architecture: the form of $f_\theta$,
+  the training objective, the solver
+- A table summarising all hyperparameters for both methods, read directly
+  from the `@config_yaml` attributes in HDF5
+
+## Step 6.6 — Write `report/chapters/03_simulations.qmd`
+
+This chapter visualises the simulation outputs. For each model and experiment
+combination it must include:
+
+- A trajectory plot showing all species (or consumers and resources) over
+  time, loaded from `simulations/{model}/{experiment}/numerical/`
+- For GLV `without_interactions` only, an overlay of the analytical solution
+  loaded from `simulations/{model}/{experiment}/analytical/`, with the
+  numerical error shown in a subplot
+- A phase portrait for the two-species or two-consumer case
+- A brief ecological interpretation of the dynamics observed
+
+All figures must be generated by Python chunks using `load_hdf5.py`.
+
+## Step 6.7 — Write `report/chapters/04_inference.qmd`
+
+This chapter presents the fit quality of each inference method. It must include:
+
+- For each of the 24 inference runs: a plot overlaying predicted and observed
+  trajectories on the test set
+- For Neural ODE: a training loss curve loaded from
+  `inference/.../neural_ode/training_curves/`
+- For NLME: a plot of the random effects distribution loaded from
+  `inference/.../nlme/fitted_params/random_effects`, produced by an R chunk
+  using `ggplot2`
+- For NLME on `with_interactions`: a comparison between the true interaction
+  matrix (loaded from `simulations/.../numerical/` attributes) and the
+  estimated fixed effects
+
+## Step 6.8 — Write `report/chapters/05_comparison.qmd`
+
+This chapter presents the cross-method comparison. It must include:
+
+- A summary table produced by calling `collect_all_metrics()` from
+  `load_hdf5.py`, formatted using `knitr::kable` or `pandas.style`
+- A grouped bar chart comparing RMSE across methods, models, and data configs
+- A scatter plot of RMSE vs model complexity (number of parameters for Neural
+  ODE, number of fixed effects for NLME)
+- A written discussion of which method performs better under which conditions,
+  with explicit reference to the clean vs noisy and interaction structure axes
+
+## Step 6.9 — Render the report
+
+From the `report/` directory:
+
+```bash
+# full render — runs all code chunks
+quarto render report.qmd --to pdf
+quarto render report.qmd --to html
+
+# subsequent renders — uses cached chunk outputs
+quarto render report.qmd --to pdf
+```
+
+---
+
+# Verification Checklist
+
+Before declaring each stage complete, the responsible person must verify
+the following.
+
+**After Stage 1 (configs):**
+
+- [ ] `configs/config.yaml` loads without error via
+  `hydra.initialize` in a Python REPL
+- [ ] All six experiment YAML files exist and contain a `name` field
+
+**After Stage 2 (simulation):**
+
+- [ ] `results.h5` contains six groups under `simulations/`
+- [ ] Each group has a `numerical/` subgroup with `t` and the correct state
+  datasets
+- [ ] Each group has `@config_yaml` and `@dt` attributes
+- [ ] GLV `without_interactions` has an `analytical/` subgroup
+
+**After Stage 3 (data preparation):**
+
+- [ ] `results.h5` contains twelve groups under `datasets/`
+- [ ] Each group has both `train/` and `test/` subgroups
+- [ ] `train/t` and `test/t` do not overlap
+- [ ] Noisy datasets have visibly different values from the corresponding
+  clean datasets (check a single time point manually)
+
+**After Stage 4 (inference):**
+
+- [ ] `results.h5` contains 24 groups under `inference/`
+- [ ] Every group has `predictions/`, `metrics/`, and `fitted_params/` or
+  `training_curves/` as appropriate
+- [ ] Every group has `@language` and `@config_yaml` attributes
+- [ ] All R groups have `@converged: true`
+
+**After Stage 5 (evaluation):**
+
+- [ ] Every `metrics/` subgroup has `@rmse`, `@mae`, and `@r2` attributes
+- [ ] `compare.py` runs without error and prints a table with 24 rows
+
+**After Stage 6 (report):**
+
+- [ ] `quarto render` completes without error for both PDF and HTML targets
+- [ ] All figures are present and correctly labelled
+- [ ] The comparison table in Chapter 5 matches the output of `compare.py`
+
+---
+
+# Appendix — Running the Full Pipeline
+
+The complete pipeline from scratch, assuming all scripts are written and
+dependencies installed:
+
+```bash
+# Stage 2: simulate all models and experiments
+python simulate.py --multirun \
+    model=glv,macarthur \
+    experiment=without_interactions,mean_field,with_interactions \
+    simulation=fine
+
+# Stage 3: prepare datasets
+python prepare_data.py --multirun \
+    model=glv,macarthur \
+    experiment=without_interactions,mean_field,with_interactions \
+    data=clean,noisy
+
+# Stage 4: run all inference methods
+python train.py --multirun \
+    model=glv,macarthur \
+    experiment=without_interactions,mean_field,with_interactions \
+    data=clean,noisy \
+    inference=nlme,neural_ode
+
+# Stage 5: evaluate and compare
+python evaluate.py
+python compare.py
+
+# Stage 6: render report
+cd report
+quarto render report.qmd --to pdf
+quarto render report.qmd --to html
+```
+
+To run a single experiment quickly for testing (using the coarse simulation
+config and clean data only):
+
+```bash
+python simulate.py model=glv experiment=without_interactions simulation=coarse
+python prepare_data.py model=glv experiment=without_interactions data=clean
+python train.py model=glv experiment=without_interactions data=clean inference=neural_ode
+python evaluate.py
+```

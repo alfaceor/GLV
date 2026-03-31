@@ -1,0 +1,137 @@
+# Introduction
+
+## Motivation
+
+### Objective
+
+- Improve people's health and well being.
+
+### What are the motivations for this work?
+
+ what are the main factors to get a good health? and how to maintain homeostasis[^1]
+
+[^1]: homeostasis comes from two ancient Greek words meaning “equal” and “holding still” then maintain a state of balance or equilibrium.
+
+ - 4 pillars of good health:
+    - Nutrition
+    - Physical activity
+    - Sleep
+    - Behavioral health
+ <!-- TODO: -->
+ - Reduce inequalities social aspect.
+
+ - Thermodynamics and life as organic machine:
+    - What is life Schrodinger? @b_1992_ErwinSchrodinger_WhatIsLife
+    - From microscopic to macroscopic observables (Statistical Physics)
+
+### What is a healthy microbiota?
+
+- Anthony Leeuwenhoeck 1683 
+
+- Is there an ideal gut microbiota composition?@gut_2019_Rinninella_microorganisms
+    - Each individual is provided with a unique gut microbiota profile that plays many specific functions in host nutrient metabolism, maintenance of structural integrity of the gut mucosal barrier,
+immunomodulation, and protection against pathogens
+    - However, a healthy host–microorganism
+balance must be respected in order to optimally perform metabolic and immune functions and
+prevent disease development
+
+### Why the Gut microbiota?
+
+To get details about the gut microbiota environment checkout the section @sec-GIT
+
+- Gut-microbiota-targeted diets modulate human
+immune status @gut_2021_Sonnenburg_Cell
+- Short-cahin fatty acids: linking diet, the microbiome and immunity @gut_2024_MannLamUhig_NatureReviewsImmunology.
+- Nutrition role @nut_2025_SanzVeiga_NatureReviews
+-   Gut microbiota has multiple roles and acts as new organ that is specific for different people's and dependent on multiple internal and external factors
+-   Is a largely diverse and complex system, which make it difficult to analyse.
+-   The modulation of the gut microbiota composition could help to adpat the immune system, the way the nutrients are absord, and impacts on the absorption of the antibiotics or some other treatments.
+-   Antibiotic resistance
+
+### What are the physical properties of GIT? {.appendix}
+
+- How long it is?
+- What is the human adult volumen distribution?
+- Compare it to other species in size.
+- Estimate the number of bacteria
+
+### Gut microbiota
+
+Around two decades ago, our knowledge of the adult human gut microbiota came from labour-intesive culture-based methods
+
+### Adaptive immune system connection
+
+## Mathematical Models
+
+### Bacteria dynamics
+
+-   Times and orders of magnitude
+-   Multiples scales in bacteria dynamics (internal and external mechanisms)
+-   Taxonomy
+-   Interactions: (Competition, mutualism, etc)
+
+
+### Theoretical Ecology
+
+
+#### Macroecological laws
+
+A fundamental and unresolved question in ecology is how many species can mantein coexistence? Are there macroecological laws, that are somehow similar to thermodynamic laws are a consequence of microscopic interactions that we can predict? @gLV_2020_Grilli_NatureCom
+
+- Typical conditions of ecological phenomena are quite difficult to track do to the large number of complex spatio-temporal conditions.
+- How can we disentagle the effect of multiple mechanisms in systems with a thousands of different species, under a different ecological forces like, enviromental fluctuations, cross-feeding, competition or demographic stochasticity.
+- Species abundance distributions (SAD)
+- @gLV_2020_Grilli_NatureCom shows that stochastic logistic growth model reproduces three macroecological laws, as well as the dynamic patterns in temporal data. The model also reflects that the taxonomic resolution commonly used competitive exclusion is rare and variation of species presence and abundance is mostly due to environmental fluctuations.
+- **Abundance fluctuations are gamma distributed** abundance fluctuation distribution (AFD)
+
+- why a Gamma distribution is the distribution for the abundance fluctuation distribution?
+
+TODO: proof that this relationship holds by showing the calculations on @gLV_2020_Grilli_NatureCom
+
+$$
+p_i (x) = \frac{1}{\Gamma(\beta_{i})}
+        \left( \frac{\beta_{i}}{\bar{x_{i}}} \right)^{\beta_{i}}
+        x^{\beta_{i} -1 } \exp \left( -\beta_{i} \frac{x}{\bar{x_{i}}} \right)
+$$
+
+where $\bar{x_{i}}$, $\beta_{i}$ fully characterize the AFD of each species.
+
+
+
+#### Other
+<!-- TODO: add references here -->
+- Random matrix formalism  and techniques from disordered systems.
+- MacArthur/Resource-Consumer model and Generalized Lotka-Volterra model
+
+### Resource-Consumer model
+
+
+
+### Lotka-Volterra
+
+$$
+\frac{d}{dt} n_{i} = 
+    \alpha_{i}\left(1-\frac{n_{i}}{k_{i}} \right) n_{i}
+    + \sum_{i \neq j}^{S} \epsilon_{i,j} n_{i} n_{j}
+$$
+
+What is the effect on numerical precision using $x_i = \ln n_i$?
+
+$$
+\frac{d}{dt} \ln n_{i} = 
+    \alpha_{i}\left(1-\frac{n_{i}}{k_{i}} \right)
+    + \sum_{i \neq j}^{S} \epsilon_{i,j} n_{j}
+$$
+
+
+$$
+\frac{d}{dt} \ln n_{i} = 
+    \alpha_{i}\left(1-\exp \ln \frac{ n_{i}}{k_{i}} \right)
+    + \sum_{i \neq j}^{S} \epsilon_{i,j} \exp \ln n_{j}
+$$
+
+$$
+\frac{d}{dt} x_{i} = 
+    \alpha_{i}\left(1-A \exp x_{i} \right)
+    + \sum_{i \neq j}^{S} \epsilon_{i,j} \exp x_{j}
+$$

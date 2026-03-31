@@ -1,0 +1,37 @@
+## Inference
+
+### Classical statistical inference
+
+- Likelihood
+- Regulation? Perhaps
+
+
+### Machine Learning inference
+
+- Which method should I use random forest or something more advanced?
+- Neural networks as universal approximator
+- What are Foundational models? LLM is a foundational model, because was trained in a bunch of data, so can be applied across wide range of use cases.
+
+
+### Convolution Neural Network
+
+
+input 
+kernel
+convolutional neuron
+
+
+$$
+y = \sigma \left( \sum \text{input} \otimes \text{kernel} + b \right)
+$$
+
+
+
+### Geometric Deep Learning
+
+
+
+
+Symmetries and network structure
+
+

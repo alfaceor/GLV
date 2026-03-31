@@ -1,0 +1,73 @@
+
+
+```{python}
+import torch
+import torch.nn as nn
+
+# --- 1. THE RESIDUAL BLOCK (ResNet) ---
+class ResidualBlock(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super(ResidualBlock, self).__init__()
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
+        self.bn1 = nn.BatchNorm2d(out_channels)
+        self.relu = nn.ReLU()
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
+        self.bn2 = nn.BatchNorm2d(out_channels)
+
+    def forward(self, x):
+        identity = x  # Save the input for the shortcut
+        
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
+        
+        out = self.conv2(out)
+        out = self.bn2(out)
+        
+        # THE MAGIC STEP: Add the input back to the output
+        out += identity 
+        out = self.relu(out)
+        return out
+
+
+```
+
+
+```{python}
+
+# --- 2. THE PLAIN BLOCK (Standard CNN) ---
+class PlainBlock(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super(PlainBlock, self).__init__()
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
+        self.bn1 = nn.BatchNorm2d(out_channels)
+        self.relu = nn.ReLU()
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
+        self.bn2 = nn.BatchNorm2d(out_channels)
+
+    def forward(self, x):
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
+        
+        out = self.conv2(out)
+        out = self.bn2(out)
+        
+        # NO SHORTCUT: Just return the transformed data
+        out = self.relu(out)
+        return out
+
+
+```
+
+
+```{python}
+
+# Example usage:
+input_tensor = torch.randn(1, 64, 32, 32) # (Batch, Channels, Height, Width)
+resnet_layer = ResidualBlock(64, 64)
+plain_layer = PlainBlock(64, 64)
+
+print(f"ResNet Output Shape: {resnet_layer(input_tensor).shape}")
+```
+

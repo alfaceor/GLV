@@ -1,0 +1,286 @@
+
+# Neural ODE
+
+## What is a neuralODE
+
+- Make a definition of the neuralODE
+- How can we get from geometric deep learning to neuralODE?
+
+## Solving ODEs with torchdiffeq
+
+TODO: Make a code separation and explain the details of the 
+Thanks to the autodifferentiation of depp network pacakges like torch, jax, etc.
+
+We can use GPUs (or CPUs) to solve numerically,
+
+```{python}
+import torch
+from torchdiffeq import odeint
+import matplotlib.pyplot as plt
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# Number of species
+N = 4
+
+# Intrinsic growth rates r_i
+r = torch.tensor([0.5, 0.3, 0.2, 0.4], device=device)  # shape: [N]
+
+# Interaction matrix A_ij
+#   d x_i / dt = x_i ( r_i + sum_j A_ij x_j )
+A = torch.tensor([
+    [-1.0, -0.5,  0.0,  0.0],
+    [ 0.5, -1.0, -0.3,  0.0],
+    [ 0.0,  0.3, -1.0, -0.4],
+    [ 0.0,  0.0,  0.4, -1.0],
+], device=device)  # shape: [N, N]
+
+
+class GeneralizedLotkaVolterra(torch.nn.Module):
+    def __init__(self, r, A):
+        super().__init__()
+        # register as buffers so they move with .to(device)
+        self.register_buffer("r", r)
+        self.register_buffer("A", A)
+
+    def forward(self, t, x):
+        # x: (..., N)
+        # interaction term: (..., N) @ (N, N)^T -> (..., N)
+        interaction = torch.matmul(x, self.A.T)
+        dxdt = x * (self.r + interaction)
+        return dxdt
+
+
+# Initial populations (all positive)
+x0 = torch.tensor([1.0, 0.5, 0.8, 0.3], device=device)  # shape: [N]
+
+# Time grid
+t = torch.linspace(0.0, 50.0, steps=1000, device=device)
+
+# Instantiate system and integrate
+gv = GeneralizedLotkaVolterra(r, A).to(device)
+
+with torch.no_grad():
+    xt = odeint(gv, x0, t)  # shape: [T, N]
+
+# Move to CPU for plotting
+t_cpu = t.cpu()
+xt_cpu = xt.cpu()
+
+```
+
+
+```{python}
+gv._parameters
+gv._buffers
+gv._modules
+```
+
+
+
+
+```{python}
+
+plt.figure(figsize=(7, 4))
+for i in range(N):
+    plt.plot(t_cpu, xt_cpu[:, i], label=f"Species {i+1}")
+plt.xlabel("Time")
+plt.ylabel("Population")
+plt.title("Generalized Lotka–Volterra (N = 4)")
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+```
+
+
+
+
+
+```{python}
+sel_idx = torch.tensor([10, 20, 30, 40, 50], dtype=torch.long, device=t.device)
+
+xt_sel = xt[sel_idx, :]   # shape: [len(sel_idx), N]
+t_sel = t[sel_idx]        # shape: [len(sel_idx)]
+```
+
+
+```{python}
+# desired time values
+sel_times = torch.tensor([10., 20., 30., 40., 50.])
+
+# find indices of the closest time points in t
+idx = torch.argmin((t_cpu[:, None] - sel_times[None, :]).abs(), dim=0)
+
+xt_sel = xt_cpu[idx, :]   # shape: [5, N]
+t_sel  = t_cpu[idx]       # shape: [5]
+
+t_sel
+xt_sel
+```
+
+
+```{python}
+import matplotlib.pyplot as plt
+
+N = xt_sel.shape[1]
+
+plt.figure(figsize=(6, 4))
+for i in range(N):
+    plt.plot(
+        t_sel.numpy(),
+        xt_sel[:, i].numpy(),
+        "o-",
+        label=f"Species {i+1}"
+    )
+
+plt.xlabel("Time")
+plt.ylabel("Population")
+plt.title("Selected Time Points (Generalized Lotka–Volterra)")
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+```
+
+
+# Parameter inference
+
+A simple neuralODE to infer the interactions using a generalized lotka-volterra model with pytorch using as input the xt_sel and t_sel
+
+
+Here are the main equations in LaTeX.
+
+**Generalized Lotka–Volterra (component‑wise)**  
+$$
+\frac{d}{dt} x_i
+= x_i \left( r_i + \sum_{j=1}^N A_{ij} x_j \right),
+\qquad i = 1,\dots,N.
+$$
+
+**Vector form** (using elementwise product \(\odot\)):  
+$$
+\frac{d}{dt} \mathbf{x}
+= \mathbf{x} \odot \bigl( \mathbf{r} + A \mathbf{x} \bigr),
+$$
+where \(\mathbf{x}(t) \in \mathbb{R}^N\), \(\mathbf{r} \in \mathbb{R}^N\), \(A \in \mathbb{R}^{N \times N}\).
+
+**Neural ODE solution (conceptual)**  
+$$
+\mathbf{x}(t)
+= \mathbf{x}(t_0)
++ \int_{t_0}^{t} f_\theta\bigl( s, \mathbf{x}(s) \bigr)\, ds,
+\quad
+f_\theta(s, \mathbf{x}) = \mathbf{x} \odot \bigl( \mathbf{r} + A \mathbf{x} \bigr).
+$$
+
+**MSE loss used for fitting** (with observations \(\mathbf{x}^{\text{obs}}(t_k)\)):  
+$$
+\mathcal{L}(\theta)
+= \frac{1}{TN}
+\sum_{k=1}^{T}
+\left\|
+\mathbf{x}_\theta(t_k) - \mathbf{x}^{\text{obs}}(t_k)
+\right\|_2^2.
+$$
+
+
+
+```{python}
+import torch
+from torch import nn
+from torchdiffeq import odeint
+
+# Ensure tensors and types are as expected
+xt_train = xt_sel.clone().detach().float()   # shape [T, N]
+t_train  = t_sel.clone().detach().float()    # shape [T]
+T, N = xt_train.shape
+
+# Shift time so the first observation is at t = 0
+t_train = t_train - t_train[0]
+
+# Initial condition is the first observed state
+x0 = xt_train[0]    # shape [N]
+
+class GLVNeuralODE(nn.Module):
+    """
+    Neural ODE with GLV structure:
+        dx_i/dt = x_i * ( r_i + sum_j A_ij x_j )
+    where r and A are learnable parameters.
+    """
+    def __init__(self, n_species):
+        super().__init__()
+        # Initialize near a stable point: small r, negative self-interactions
+        self.r = nn.Parameter(0.01 * torch.randn(n_species))
+        self.A = nn.Parameter(-torch.eye(n_species))
+
+    def forward(self, t, x):
+        # x: (..., N)
+        interaction = x @ self.A.T          # (..., N)
+        dxdt = x * (self.r + interaction)   # (..., N)
+        return dxdt
+
+model = GLVNeuralODE(N)
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-2)
+
+```
+
+```{python}
+
+n_epochs = 2000
+
+for epoch in range(1, n_epochs + 1):
+    optimizer.zero_grad()
+
+    # Integrate from x0 over the observed times
+    x_pred = odeint(model, x0, t_train)    # shape [T, N]
+
+    # Fit to observed xt_train
+    loss = torch.mean((x_pred - xt_train) ** 2)
+
+    loss.backward()
+    optimizer.step()
+
+    if epoch % 200 == 0:
+        print(f"Epoch {epoch:4d}  Loss = {loss.item():.6f}")
+
+print("Learned r:", model.r.data)
+print("Learned A:", model.A.data)
+
+```
+
+
+```{python}
+model.r.detach().cpu()
+```
+
+```{python}
+import numpy as np
+
+# move to CPU and numpy
+r_hat = model.r.detach().cpu().numpy()        # shape [N]
+A_hat = model.A.detach().cpu().numpy()        # shape [N, N]
+
+# Bar plot for r
+plt.figure(figsize=(5, 3))
+plt.bar(np.arange(N) + 1, r_hat)
+plt.xlabel("Species")
+plt.ylabel("r_i")
+plt.title("Inferred intrinsic growth rates r")
+plt.xticks(np.arange(1, N + 1))
+plt.tight_layout()
+plt.show()
+
+# Heatmap for A
+plt.figure(figsize=(4, 4))
+im = plt.imshow(A_hat, cmap="bwr", aspect="equal")
+plt.colorbar(im, label="Interaction strength A_ij")
+plt.xlabel("j (source species)")
+plt.ylabel("i (target species)")
+plt.title("Inferred interaction matrix A")
+plt.xticks(range(N), [f"{j+1}" for j in range(N)])
+plt.yticks(range(N), [f"{i+1}" for i in range(N)])
+plt.tight_layout()
+plt.show()
+
+```

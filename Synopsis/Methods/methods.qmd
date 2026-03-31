@@ -1,0 +1,10 @@
+# Methods
+
+## Plan
+
+- Generate data from inferred lotka-Volterra Models and infer the interactions parameters
+- Evaluate Shannon diversity fluctuations
+- Renormalization Group
+
+
+
