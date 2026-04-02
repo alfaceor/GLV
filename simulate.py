@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
 
 import hydra
 from hydra.core.config_store import ConfigStore
@@ -11,41 +12,135 @@ import torch
 import matplotlib.pyplot as plt
 
 
-def simulate(A: torch.Tensor, r: torch.Tensor, X0: torch.Tensor, dt: float, steps: int) -> torch.Tensor:
-    """Euler-step simulation of dX_i = X_i (r_i + sum_j A_ij X_j)."""
+def simulate(
+    A: torch.Tensor,
+    r: torch.Tensor,
+    X0: torch.Tensor,
+    dt: float,
+    steps: int,
+    sigma: torch.Tensor | float | None = None,
+) -> torch.Tensor:
+    """Euler-Maruyama simulation of dX_i = X_i (r_i + sum_j A_ij X_j) with multiplicative noise."""
+    if steps < 0:
+        raise ValueError("steps must be non-negative")
+    if dt <= 0:
+        raise ValueError("dt must be positive")
+
     X = X0.clone()
-    traj = torch.zeros(steps + 1, X.size(0), dtype=X.dtype, device=X.device)
+    n_species = X.size(0)
+    traj = torch.zeros(steps + 1, n_species, dtype=X.dtype, device=X.device)
     traj[0] = X
+
+    r = r.to(device=X.device, dtype=X.dtype)
+    A = A.to(device=X.device, dtype=X.dtype)
+
+    if sigma is None:
+        noise_strength = None
+    elif isinstance(sigma, torch.Tensor):
+        noise_strength = sigma.to(device=X.device, dtype=X.dtype)
+    else:
+        noise_strength = torch.full((n_species,), float(sigma), device=X.device, dtype=X.dtype)
+
+    sqrt_dt = math.sqrt(dt)
+
     for i in range(steps):
-        dX = X * (r + A @ X)
-        X = X + dt * dX
+        drift = X * (r + A @ X)
+        if noise_strength is None:
+            X = X + dt * drift
+        else:
+            stochastic = noise_strength * X * sqrt_dt * torch.randn_like(X)
+            X = X + dt * drift + stochastic
         traj[i + 1] = X
     return traj
 
 
-def random_system(n_species: int, device: torch.device | None = None, dtype: torch.dtype = torch.float32):
-    """Generate random interaction matrix, growth rates, and initial state."""
+def random_gaussian_system(
+    n_species: int,
+    noise_std: float = 0.1,
+    device: torch.device | None = None,
+    dtype: torch.dtype = torch.float32,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Sample Gaussian A and r without guarantees on feasibility or stability."""
     device = device or torch.device("cpu")
     A = torch.randn(n_species, n_species, device=device, dtype=dtype)
     r = torch.randn(n_species, device=device, dtype=dtype)
     X0 = torch.rand(n_species, device=device, dtype=dtype)
-    return A, r, X0
+    sigma = torch.full((n_species,), float(noise_std), device=device, dtype=dtype)
+    return A, r, X0, sigma
 
 
-def plot_trajectories(traj: torch.Tensor) -> None:
+def random_feasible_system(
+    n_species: int,
+    noise_std: float = 0.1,
+    device: torch.device | None = None,
+    dtype: torch.dtype = torch.float32,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Generate A and r with a positive, linearly stable equilibrium."""
+    device = device or torch.device("cpu")
+
+    # Pick a strictly positive equilibrium
+    x_star = 0.5 + torch.rand(n_species, device=device, dtype=dtype)
+
+    # Build a symmetric negative definite interaction matrix
+    B = torch.randn(n_species, n_species, device=device, dtype=dtype)
+    A = -(B @ B.T) - 0.1 * torch.eye(n_species, device=device, dtype=dtype)
+
+    # Set growth rates so that x_star is an equilibrium: r = -A x_star
+    r = -(A @ x_star)
+
+    # Sample initial condition near the equilibrium
+    X0 = x_star * (0.8 + 0.4 * torch.rand(n_species, device=device, dtype=dtype))
+
+    sigma = torch.full((n_species,), float(noise_std), device=device, dtype=dtype)
+    return A, r, X0, sigma
+
+
+def random_system(
+    n_species: int,
+    noise_std: float = 0.1,
+    device: torch.device | None = None,
+    dtype: torch.dtype = torch.float32,
+    mode: str = "feasible",
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Dispatch between Gaussian and feasible/stable random systems."""
+    generators = {
+        "gaussian": random_gaussian_system,
+        "feasible": random_feasible_system,
+    }
+    try:
+        generator = generators[mode]
+    except KeyError as exc:  # pragma: no cover - simple input guard
+        raise ValueError(f"unknown random system mode '{mode}'") from exc
+
+    return generator(n_species=n_species, noise_std=noise_std, device=device, dtype=dtype)
+
+
+
+def plot_trajectories(traj: torch.Tensor, ax: plt.Axes, linestyle: str = '-') -> None:
     """Plot the trajectories of all species."""
     tt = torch.arange(traj.size(0))  # Time points
-    plt.plot(tt.cpu().numpy(), traj.cpu().numpy())
-    plt.xlabel("Time")
-    plt.ylabel("Abundance")
-    plt.title("Generalized Lotka-Volterra Simulation")
-    plt.show()
+    ax.plot(tt.cpu().numpy(), traj.cpu().numpy(), linestyle=linestyle)
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Abundance")
+    ax.set_title("Generalized Lotka-Volterra Simulation")
+
+
+def plot_matrix_A(A: torch.Tensor, ax: plt.Axes) -> None:
+    """Plot the interaction matrix."""
+    im = ax.imshow(A.cpu().numpy(), cmap="coolwarm")
+    ax.set_title("Interaction matrix A")
+    ax.set_xlabel("Species j")
+    ax.set_ylabel("Species i")
+    plt.colorbar(im, ax=ax, orientation="vertical", shrink=0.8)
+
 
 @dataclass
 class Config:
-    n_species: int = 3
+    n_species: int = 64
     dt: float = 0.01
-    steps: int = 100
+    steps: int = 50
+    noise_std: float = 0.1
+    seed: int | None = 42
 
 
 cs = ConfigStore.instance()
@@ -53,12 +148,25 @@ cs.store(name="glv_config", node=Config)
 
 @hydra.main(version_base=None, config_name="glv_config")
 def main(cfg: Config) -> None:
+    torch.manual_seed(cfg.seed)
     print("Configuration:", cfg)
-    A, r, X0 = random_system(cfg.n_species)
-    # tt = torch.arange(cfg.steps + 1) * cfg.dt
-    traj = simulate(A, r, X0, cfg.dt, cfg.steps)
-    plot_trajectories(traj)
-    print("Final state:", traj[-1])
+    str_device = "cuda" if torch.cuda.is_available() else "cpu"
+    # str_device = "cpu"  # Force CPU for now to avoid GPU memory issues
+    print(f"Using device: {str_device}")
+    fig, ax = plt.subplots(2, 1, figsize=(10, 8))
+    A, r, X0, sigma = random_system(cfg.n_species, noise_std=cfg.noise_std, device=str_device)
+    
+    deter_traj = simulate(A, r, X0, cfg.dt, cfg.steps) 
+    stoch_traj = simulate(A, r, X0, cfg.dt, cfg.steps, sigma=sigma)
+    print(deter_traj.device)
+    
+    plot_trajectories(deter_traj, ax=ax[0], linestyle='--')
+    # plot_trajectories(stoch_traj, ax=ax[0])
+    plot_matrix_A(A, ax=ax[1])
+    print("Final state (deterministic):", deter_traj[-1])
+    print("Final state (stochastic):", stoch_traj[-1])
+    ax[0].legend()
+    plt.show()
 
 
 if __name__ == "__main__":
