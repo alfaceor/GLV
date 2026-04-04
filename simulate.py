@@ -12,6 +12,7 @@ from hydra.core.config_store import ConfigStore
 
 import torch
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FormatStrFormatter
 import h5py
 
 
@@ -135,11 +136,21 @@ def plot_trajectories(
 
 def plot_matrix_A(A: torch.Tensor, ax: plt.Axes) -> None:
     """Plot the interaction matrix."""
-    im = ax.imshow(A.cpu().numpy(), cmap="coolwarm")
+    A_np = A.cpu().numpy()
+    im = ax.imshow(A_np, cmap="coolwarm")
     ax.set_title("Interaction matrix A")
     ax.set_xlabel("Species j")
     ax.set_ylabel("Species i")
-    plt.colorbar(im, ax=ax, orientation="vertical", shrink=0.8)
+    cbar = plt.colorbar(im, ax=ax, orientation="vertical", shrink=0.8)
+    # Show colorbar tick labels with 2 significant digits
+    cbar.formatter = FormatStrFormatter("%.2g")
+    cbar.update_ticks()
+
+    # Overlay each matrix entry with 2-significant-digit text
+    n_i, n_j = A_np.shape
+    for i in range(n_i):
+        for j in range(n_j):
+            ax.text(j, i, f"{A_np[i, j]:.2g}", ha="center", va="center", color="black")
 
 
 @dataclass
@@ -256,4 +267,3 @@ def main(cfg: Config) -> None:
 
 if __name__ == "__main__":
     main()
-
