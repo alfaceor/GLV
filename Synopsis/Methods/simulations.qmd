@@ -1,0 +1,192 @@
+## Simulations
+
+TODO: Describe how simulations were performed.
+
+```{python}
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import plotly.express as px
+import h5py
+import ast
+
+```
+
+
+
+
+```{python}
+
+def load_simulation_data(filepath):
+    with h5py.File(filepath, "r") as h5:
+        # 1. Read Datasets (as NumPy arrays)
+        # Use [:] to load the data into memory
+        data = {
+            "det": h5["trajectories/deterministic"][:],
+            "stoch": h5["trajectories/stochastic"][:],
+            "A": h5["system/A"][:],
+            "r": h5["system/r"][:],
+            "X0": h5["system/X0"][:],
+            "sigma": h5["system/sigma"][:]
+        }
+
+        # 2. Read Config Attributes
+        # .attrs returns an object you can cast to a dict
+        config = dict(h5["config"].attrs)
+        # config = ast.literal_eval(h5["config"].attrs["_content"])
+
+        # 3. Read Metadata Attributes
+        metadata = dict(h5["metadata"].attrs)
+
+        return data, config, metadata
+
+```
+
+
+```{python}
+fln_data = "../../data/simul/glv_sim_results.h5"
+
+def explore(name, obj):
+    print(name)
+    if isinstance(obj, h5py.Dataset):
+        print("  shape:", obj.shape)
+        print("  dtype:", obj.dtype)
+    print("  attrs:", dict(obj.attrs))
+
+with h5py.File(fln_data, 'r') as f:
+    print(list(f.keys()))
+    f.visititems(explore)
+
+```
+
+
+
+```{python}
+data, config, metadata = load_simulation_data(fln_data)
+traj_det = data['det']
+traj_det
+hydra_config = eval(config['_content'])
+time = np.arange(hydra_config['steps']+1)*hydra_config['dt']
+fig, ax = plt.subplots()
+ax.plot(time, traj_det[0])
+traj_det.shape, traj_det[0].shape, time.shape
+```
+
+```{python}
+```
+
+```{python}
+tmp_caption=(
+    f"Simulation with dt={hydra_config['dt']}, steps={hydra_config['steps']}, noise={hydra_config['noise_std']}",
+    "sera"
+)
+#| label: fig-trajectory
+#| fig-cap: tmp_caption 
+
+traj_stoch = data['stoch']
+traj_stoch
+
+
+fig, ax = plt.subplots()
+ax.plot(time, traj_stoch[0])
+
+
+
+```
+
+
+```{python}
+
+```
+$$
+\frac{d}{dt} n_{i} = 
+    r_{i}\left(1-\frac{n_{i}}{k_{i}} \right) n_{i}
+    + \sum_{i \neq j}^{S} \epsilon_{i,j} n_{i} n_{j}
+$$
+
+
+$$
+dn_{i} = \left[
+    r_{i}\left(1-\frac{n_{i}}{k_{i}} \right) n_{i}
+    + \sum_{i \neq j}^{S} \epsilon_{i,j} n_{i} n_{j}
+\right] dt
+$$
+
+
+$$
+dn_{i} = \left[
+    \left(r_{i} -\frac{r_{i}}{k_{i} n_{i} } \right) n_{i}
+    + \sum_{i \neq j}^{S} \epsilon_{i,j} n_{i} n_{j}
+\right] dt
+$$
+
+
+$$
+A_{ij} = 
+\begin{cases}
+- \frac{r_{i}}{k_{i}} & i = j \\
+\epsilon_{ij} & i \neq j
+\end{cases}
+$$
+
+
+then 
+
+$$
+dn_{i} = \left[
+    \left(r_{i} -\frac{r_{i}}{k_{i} n_{i} } \right) n_{i}
+    + \sum_{i \neq j}^{S} \epsilon_{i,j} n_{i} n_{j}
+\right] dt
+$$
+
+
+$$
+d n_i = n_i \left( r_i + \sum_{j} A_{ij} n_j \right) dt
+ + \sigma n_i \sqrt{dt}
+$$
+
+
+```{python}
+import xarray as xr
+
+def h5py_dataset_iterator(g, prefix=''):
+    for key, item in g.items():
+        path = '{}/{}'.format(prefix, key)
+        if isinstance(item, h5py.Dataset): # test for dataset
+            yield (path, item)
+        elif isinstance(item, h5py.Group): # test for group (go down)
+            yield from h5py_dataset_iterator(item, path)
+
+
+
+# ds = xr.open_dataset(fln_data, group="trajectories/deterministic")
+# FIXME: how to organize the data to get chunks for each trial
+# FIXME: How to save the histogram of the distributions in an efficient way and calculate moments, quantiles or cumulants efficiently?
+#  
+    # ds = xr.open_dataset(f, group="trajectories/deterministic")
+    
+    # for (path, dset) in h5py_dataset_iterator(f):
+    #     print(path, dset)
+
+# with xr.open_dataset(fln_data) as ds:
+#     print(ds)
+# data = xr.open_dataset(fln_data)
+# data
+```
+
+```{python}
+# with h5py.File(fln_data, "r") as h5:
+#     print(h5.keys())
+#     print(h5['trajectories']['deterministic'])
+#     # data = {
+#     #         "det": h5["trajectories/deterministic"][:],
+#     #         "stoch": h5["trajectories/stochastic"][:],
+#     #         "A": h5["system/A"][:],
+#     #         "r": h5["system/r"][:],
+#     #         "X0": h5["system/X0"][:],
+#     #         "sigma": h5["system/sigma"][:]
+#     #     }
+
+```
+
+
