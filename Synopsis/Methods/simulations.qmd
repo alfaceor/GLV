@@ -15,6 +15,7 @@ import ast
 
 
 
+
 ```{python}
 
 def load_simulation_data(filepath):
@@ -53,9 +54,9 @@ def explore(name, obj):
         print("  dtype:", obj.dtype)
     print("  attrs:", dict(obj.attrs))
 
-with h5py.File(fln_data, 'r') as f:
-    print(list(f.keys()))
-    f.visititems(explore)
+# with h5py.File(fln_data, 'r') as f:
+#     print(list(f.keys()))
+#     f.visititems(explore)
 
 ```
 
@@ -72,25 +73,128 @@ ax.plot(time, traj_det[0])
 traj_det.shape, traj_det[0].shape, time.shape
 ```
 
-```{python}
-```
 
 ```{python}
 tmp_caption=(
     f"Simulation with dt={hydra_config['dt']}, steps={hydra_config['steps']}, noise={hydra_config['noise_std']}",
     "sera"
 )
+
+```
+
+```{python}
 #| label: fig-trajectory
-#| fig-cap: tmp_caption 
+#| fig-cap: Stochastic simulations for 4 species
 
 traj_stoch = data['stoch']
 traj_stoch
 
+import matplotlib as mpl
+
+cm = mpl.colormaps.get_cmap("Set1")
 
 fig, ax = plt.subplots()
-ax.plot(time, traj_stoch[0])
+for trial in range(traj_stoch.shape[0]):
+    ax.plot(time, traj_stoch[trial], color=cm( float(trial)/traj_stoch.shape[0]) )
+
+```
 
 
+```{python}
+
+import matplotlib.pyplot as plt
+from matplotlib.collections import LineCollection
+import numpy as np
+
+# traj_stoch: (1000, 51, 4)
+trials, time_steps, particles = traj_stoch.shape
+colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']
+
+fig, ax = plt.subplots(figsize=(10, 6))
+
+for p in range(particles):
+    # 1. Reshape data for LineCollection
+    # We need a list of segments: (trials, time_steps, 2) where 2 is (x, y)
+    # np.column_stack puts time and data together for each trial
+    segments = [np.column_stack([time, traj_stoch[t, :, p]]) for t in range(trials)]
+    
+    # 2. Create the collection
+    line_segments = LineCollection(segments, 
+                                   colors=colors[p], 
+                                   alpha=0.8,  # Much lower alpha for 1000 trials
+                                   linewidth=0.5)
+    
+    # 3. Add to axes
+    ax.add_collection(line_segments)
+
+# LineCollections don't auto-scale the axes, so we do it manually
+ax.set_xlim(time.min(), time.max())
+ax.set_ylim(traj_stoch.min(), traj_stoch.max())
+
+plt.title(f"Fast Rendering: {trials} Trials per Particle")
+plt.show()
+
+```
+
+
+
+
+```{python}
+
+import plotly.graph_objects as go
+import numpy as np
+
+# Assuming traj_stoch shape: (1000, 51, 4)
+trials, steps, particles = traj_stoch.shape
+colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']
+
+fig = go.Figure()
+
+for p in range(particles):
+    # 1. Create a "vectorized" version of the time and data
+    # We repeat the time array for every trial and add a NaN at the end of each
+    t_nan = np.append(time, np.nan)
+    t_all = np.tile(t_nan, trials)
+    
+    # 2. Flatten the trajectory data and insert NaNs to break the lines
+    # This prevents the end of one trial from connecting to the start of the next
+    data_with_nans = np.zeros((trials, steps + 1))
+    data_with_nans[:, :steps] = traj_stoch[:, :, p]
+    data_with_nans[:, steps] = np.nan
+    data_all = data_with_nans.flatten()
+
+    # 3. Add using Scattergl (WebGL) for high performance
+    fig.add_trace(go.Scattergl(
+        x=t_all,
+        y=data_all,
+        mode='lines',
+        name=f'Particle {p+1}',
+        line=dict(color=colors[p], width=0.5),
+        opacity=0.8,  # Low opacity for density effect
+        hoverinfo='skip' # Performance boost: skip hover for 1000 lines
+    ))
+
+fig.update_layout(
+    title=f"Stochastic Simulation ({trials} trials)",
+    xaxis_title="Time",
+    yaxis_title="Value",
+    template="plotly_white",
+    showlegend=True
+)
+
+# Calculate global bounds once
+y_min = traj_stoch.min()
+y_max = traj_stoch.max()
+x_min = time.min()
+x_max = time.max()
+
+# Apply to the figure
+fig.update_layout(
+    xaxis=dict(range=[x_min, x_max], autorange=False),
+    yaxis=dict(range=[y_min, y_max], autorange=False)
+)
+
+fig.show()
 
 ```
 
@@ -98,6 +202,8 @@ ax.plot(time, traj_stoch[0])
 ```{python}
 
 ```
+
+
 $$
 \frac{d}{dt} n_{i} = 
     r_{i}\left(1-\frac{n_{i}}{k_{i}} \right) n_{i}
