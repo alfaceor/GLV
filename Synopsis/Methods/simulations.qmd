@@ -10,9 +10,21 @@ import plotly.express as px
 import h5py
 import ast
 
+import matplotlib as mpl
+
 ```
 
 
+
+```{python}
+###### BEGIN PLOT DECORATION VARIABLES 
+font = {'family': 'normal',
+        'weight': 'bold',
+        'size': 14}
+plt.rc('font', **font)
+plt.rc('text', usetex=True)
+###### END PLOT DECORATION VARIABLES
+```
 
 
 
@@ -44,6 +56,11 @@ def load_simulation_data(filepath):
 ```
 
 
+### Four species system
+
+In order to visualize the dynamics of even complex systems we explore a 4 species system in this section.
+
+
 ```{python}
 fln_data = "../../data/simul/glv_sim_results.h5"
 
@@ -64,15 +81,140 @@ def explore(name, obj):
 
 ```{python}
 data, config, metadata = load_simulation_data(fln_data)
+
+# data 
 traj_det = data['det']
-traj_det
+traj_stoch = data['stoch']
+Amat = data['A']
+r = data['r']
+sigmas = data['sigma']
+
+# config
 hydra_config = eval(config['_content'])
 time = np.arange(hydra_config['steps']+1)*hydra_config['dt']
-fig, ax = plt.subplots()
-ax.plot(time, traj_det[0])
-traj_det.shape, traj_det[0].shape, time.shape
+n_species = hydra_config['n_species']
+# metadata
+
+# convient variables
+species_ids = np.arange(len(r))
+traj_labels = [f"{idx}" for idx in species_ids]
+cm = mpl.colormaps.get_cmap("Set1")
+# FIXME: Generalize the the color selection
+traj_colors = cm( np.arange( len(cm.colors) )/len(cm.colors) )
+
 ```
 
+
+#### Deterministic Dynamics
+
+
+
+```{python}
+from matplotlib.ticker import FormatStrFormatter
+
+
+def plot_matrix_A(A_np: np.array, ax: plt.Axes) -> None:
+    """Plot the interaction matrix."""
+    n_i, n_j = A_np.shape
+    max_abs_A = np.max(np.abs(A_np)) 
+    im = ax.imshow(A_np, cmap="coolwarm", interpolation="none", origin='lower',
+    vmin=-max_abs_A, vmax=max_abs_A)
+    # ax.set_title("Interaction matrix A")
+    ax.set_xlabel("Species j")
+    ax.set_ylabel("Species i")
+    cbar = plt.colorbar(im, ax=ax, orientation="vertical", shrink=0.8)
+    # Show colorbar tick labels with 2 significant digits
+    cbar.formatter = FormatStrFormatter("%.2g")
+    cbar.update_ticks()
+
+    # # Draw grid lines to visually separate cells
+    # ax.set_xticks(np.arange(-0.5, n_j, 1), minor=True)
+    # ax.set_yticks(np.arange(-0.5, n_i, 1), minor=True)
+    ax.set_xticks(np.arange(0, n_j, 1))
+    ax.set_yticks(np.arange(0, n_i, 1))
+
+    # ax.grid(which="minor", color="white", linestyle="-", linewidth=3)
+    ax.tick_params(which="minor", bottom=False, left=False)
+
+    # Overlay each matrix entry with 2-significant-digit text
+    for i in range(n_i):
+        for j in range(n_j):
+            ax.text(j, i, f"{A_np[i, j]:.2g}", ha="center", va="center", color="black")
+
+```
+
+
+```{python}
+fig, ax = plt.subplots(1, 3, figsize=(16, 5), sharey=True)
+ax_r = ax[0]
+ax_sigma = ax[1]
+ax_Amat = ax[2]
+
+ax_r.barh(np.arange(len(r)), r)
+ax_r.set(
+    ylabel=r"Species $i$",
+    xlabel=r"Growth rate $r$"
+)
+
+ax_sigma.barh(np.arange(len(sigmas)), sigmas)
+ax_sigma.set(
+    ylabel=r"Species $i$",
+    xlabel=r"Noise intensity $\sigma$"
+)
+
+# ax_sigma.barh(sigmas)
+plot_matrix_A(Amat, ax=ax_Amat)
+```
+
+
+Based on these trials calculate statistics and histograms
+
+```{python}
+qs = [5, 25, 50, 75, 95]
+# qs = [5, 50, 95]
+traj_perc = np.percentile(traj_stoch, q=qs, axis=0)
+fig, ax = plt.subplots()
+
+for idx in range(len(species_ids)):
+# for idx in range(1):
+    for per, q in enumerate(qs):
+        ax.fill_between(time, traj_perc[len(qs)//2 , :, idx], traj_perc[per, :, idx], color=traj_colors[idx], alpha=0.25 )
+        ax.fill_between(time, traj_perc[len(qs)//2 , :, idx], traj_perc[per, :, idx], color=traj_colors[idx], alpha=0.25 )
+        # ax.plot(time, traj_perc[per, :, idx], color=traj_colors[idx])
+
+    ax.plot(time, traj_det[0, :, idx], color=traj_colors[idx], linestyle='--', linewidth=3)
+    # ax.plot(traj_stoch.mean(axis=0))
+
+ax.set(
+    xlabel="Time",
+    ylabel=r"$n_i$"
+)
+# ax.legend()
+```
+
+
+```{python}
+
+```
+
+```{python}
+# len(cm.colors)
+
+# print(traj_colors)
+# [:len(species_ids)]
+
+# list(cm(np.linspace(0, 1, len(species_ids))))
+# len(cm.colors)
+
+fig, ax = plt.subplots()
+for idx, label in enumerate(species_ids):
+    ax.plot(time, traj_det[0][:, idx], label=label, color=traj_colors[idx])
+ax.set(
+    xlabel="Time",
+    ylabel=r"$n_i$"
+)
+ax.legend(frameon=False, title=r"$i$")
+```
 
 ```{python}
 tmp_caption=(
@@ -82,25 +224,15 @@ tmp_caption=(
 
 ```
 
+
+#### Stochastic Dynamics
+
 ```{python}
 #| label: fig-trajectory
 #| fig-cap: Stochastic simulations for 4 species
 
-traj_stoch = data['stoch']
-traj_stoch
+# traj_stoch
 
-import matplotlib as mpl
-
-cm = mpl.colormaps.get_cmap("Set1")
-
-fig, ax = plt.subplots()
-for trial in range(traj_stoch.shape[0]):
-    ax.plot(time, traj_stoch[trial], color=cm( float(trial)/traj_stoch.shape[0]) )
-
-```
-
-
-```{python}
 
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
@@ -134,75 +266,112 @@ ax.set_ylim(traj_stoch.min(), traj_stoch.max())
 plt.title(f"Fast Rendering: {trials} Trials per Particle")
 plt.show()
 
+
 ```
+
 
 
 
 
 ```{python}
 
-import plotly.graph_objects as go
-import numpy as np
+# import plotly.graph_objects as go
+# import numpy as np
 
-# Assuming traj_stoch shape: (1000, 51, 4)
-trials, steps, particles = traj_stoch.shape
-colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']
+# # Assuming traj_stoch shape: (1000, 51, 4)
+# trials, steps, particles = traj_stoch.shape
+# colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']
 
-fig = go.Figure()
+# fig = go.Figure()
 
-for p in range(particles):
-    # 1. Create a "vectorized" version of the time and data
-    # We repeat the time array for every trial and add a NaN at the end of each
-    t_nan = np.append(time, np.nan)
-    t_all = np.tile(t_nan, trials)
+# for p in range(particles):
+#     # 1. Create a "vectorized" version of the time and data
+#     # We repeat the time array for every trial and add a NaN at the end of each
+#     t_nan = np.append(time, np.nan)
+#     t_all = np.tile(t_nan, trials)
     
-    # 2. Flatten the trajectory data and insert NaNs to break the lines
-    # This prevents the end of one trial from connecting to the start of the next
-    data_with_nans = np.zeros((trials, steps + 1))
-    data_with_nans[:, :steps] = traj_stoch[:, :, p]
-    data_with_nans[:, steps] = np.nan
-    data_all = data_with_nans.flatten()
+#     # 2. Flatten the trajectory data and insert NaNs to break the lines
+#     # This prevents the end of one trial from connecting to the start of the next
+#     data_with_nans = np.zeros((trials, steps + 1))
+#     data_with_nans[:, :steps] = traj_stoch[:, :, p]
+#     data_with_nans[:, steps] = np.nan
+#     data_all = data_with_nans.flatten()
 
-    # 3. Add using Scattergl (WebGL) for high performance
-    fig.add_trace(go.Scattergl(
-        x=t_all,
-        y=data_all,
-        mode='lines',
-        name=f'Particle {p+1}',
-        line=dict(color=colors[p], width=0.5),
-        opacity=0.8,  # Low opacity for density effect
-        hoverinfo='skip' # Performance boost: skip hover for 1000 lines
-    ))
+#     # 3. Add using Scattergl (WebGL) for high performance
+#     fig.add_trace(go.Scattergl(
+#         x=t_all,
+#         y=data_all,
+#         mode='lines',
+#         name=f'Particle {p+1}',
+#         line=dict(color=colors[p], width=0.5),
+#         opacity=0.8,  # Low opacity for density effect
+#         hoverinfo='skip' # Performance boost: skip hover for 1000 lines
+#     ))
 
-fig.update_layout(
-    title=f"Stochastic Simulation ({trials} trials)",
-    xaxis_title="Time",
-    yaxis_title="Value",
-    template="plotly_white",
-    showlegend=True
-)
+# fig.update_layout(
+#     title=f"Stochastic Simulation ({trials} trials)",
+#     xaxis_title="Time",
+#     yaxis_title="Value",
+#     template="plotly_white",
+#     showlegend=True
+# )
 
-# Calculate global bounds once
-y_min = traj_stoch.min()
-y_max = traj_stoch.max()
-x_min = time.min()
-x_max = time.max()
+# # Calculate global bounds once
+# y_min = traj_stoch.min()
+# y_max = traj_stoch.max()
+# x_min = time.min()
+# x_max = time.max()
 
-# Apply to the figure
-fig.update_layout(
-    xaxis=dict(range=[x_min, x_max], autorange=False),
-    yaxis=dict(range=[y_min, y_max], autorange=False)
-)
+# # Apply to the figure
+# fig.update_layout(
+#     xaxis=dict(range=[x_min, x_max], autorange=False),
+#     yaxis=dict(range=[y_min, y_max], autorange=False)
+# )
 
-fig.show()
+# fig.show()
 
 ```
+
 
 
 ```{python}
 
 ```
 
+```{python}
+tmp_steps = 50
+traj_stoch[:, tmp_steps, 1]
+
+plt.hist(traj_stoch[:, tmp_steps, 0], histtype='step', density=True)
+plt.hist(traj_stoch[:, tmp_steps, 1], histtype='step', density=True)
+plt.hist(traj_stoch[:, tmp_steps, 2], histtype='step', density=True)
+plt.hist(traj_stoch[:, tmp_steps, 3], histtype='step', density=True)
+
+```
+
+```{python}
+from sklearn.preprocessing import StandardScaler
+scaler = StandardScaler()
+scaled_data = scaler.fit_transform(traj_stoch[:, tmp_steps, :])
+plt.hist(scaled_data[:, 0], histtype='step', density=True)
+plt.hist(scaled_data[:, 1], histtype='step', density=True)
+plt.hist(scaled_data[:, 2], histtype='step', density=True)
+plt.hist(scaled_data[:, 3], histtype='step', density=True)
+
+# plot a gaussian with mean zero and variance 1
+from scipy.stats import norm
+x = np.linspace(-4, 4, 100)
+plt.plot(x, norm.pdf(x, 0, 1), color='k', linestyle='--', label='N(0,1)')
+plt.legend()
+```
+
+```{python}
+# traj_stoch[:, tmp_steps, 0].mean(), traj_stoch[:, tmp_steps, 0].std()
+```
+
+```{python}
+# traj_stoch.shape
+```
 
 $$
 \frac{d}{dt} n_{i} = 
@@ -221,7 +390,7 @@ $$
 
 $$
 dn_{i} = \left[
-    \left(r_{i} -\frac{r_{i}}{k_{i} n_{i} } \right) n_{i}
+    \left(r_{i} -\frac{r_{i} n_{i}}{k_{i} } \right) n_{i}
     + \sum_{i \neq j}^{S} \epsilon_{i,j} n_{i} n_{j}
 \right] dt
 $$
@@ -240,7 +409,7 @@ then
 
 $$
 dn_{i} = \left[
-    \left(r_{i} -\frac{r_{i}}{k_{i} n_{i} } \right) n_{i}
+    \left(r_{i} -\frac{r_{i} n_{i}}{k_{i}} \right) n_{i}
     + \sum_{i \neq j}^{S} \epsilon_{i,j} n_{i} n_{j}
 \right] dt
 $$
@@ -294,5 +463,4 @@ def h5py_dataset_iterator(g, prefix=''):
 #     #     }
 
 ```
-
 
