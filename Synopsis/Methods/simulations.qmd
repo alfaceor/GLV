@@ -113,12 +113,12 @@ traj_colors = cm( np.arange( len(cm.colors) )/len(cm.colors) )
 from matplotlib.ticker import FormatStrFormatter
 
 
-def plot_matrix_A(A_np: np.array, ax: plt.Axes) -> None:
+def plot_matrix_A(A_np: np.array, species_ids: np.array, ax: plt.Axes) -> None:
     """Plot the interaction matrix."""
     n_i, n_j = A_np.shape
     max_abs_A = np.max(np.abs(A_np)) 
     im = ax.imshow(A_np, cmap="coolwarm", interpolation="none", origin='lower',
-    vmin=-max_abs_A, vmax=max_abs_A)
+    vmin=-max_abs_A, vmax=max_abs_A, aspect='auto')
     # ax.set_title("Interaction matrix A")
     ax.set_xlabel("Species j")
     ax.set_ylabel("Species i")
@@ -130,8 +130,8 @@ def plot_matrix_A(A_np: np.array, ax: plt.Axes) -> None:
     # # Draw grid lines to visually separate cells
     # ax.set_xticks(np.arange(-0.5, n_j, 1), minor=True)
     # ax.set_yticks(np.arange(-0.5, n_i, 1), minor=True)
-    ax.set_xticks(np.arange(0, n_j, 1))
-    ax.set_yticks(np.arange(0, n_i, 1))
+    ax.set_xticks(species_ids)
+    ax.set_yticks(species_ids)
 
     # ax.grid(which="minor", color="white", linestyle="-", linewidth=3)
     ax.tick_params(which="minor", bottom=False, left=False)
@@ -141,61 +141,167 @@ def plot_matrix_A(A_np: np.array, ax: plt.Axes) -> None:
         for j in range(n_j):
             ax.text(j, i, f"{A_np[i, j]:.2g}", ha="center", va="center", color="black")
 
+
+
+def plot_percentiles_time(traj_stoch, species_ids:np.array, qs, ax: plt.Axes) -> None:
+    # qs = [5, 25, 50, 75, 95]
+    traj_perc = np.percentile(traj_stoch, q=qs, axis=0)
+    for idx in range(len(species_ids)):
+    # for idx in range(1):
+        for idper in range( len(qs)//2 ):
+            ax.fill_between(time, traj_perc[idper, :, idx], traj_perc[len(qs)-1-idper, :, idx], color=traj_colors[idx], alpha=0.25 )
+            # ax.fill_between(time, traj_perc[len(qs)//2 , :, idx], traj_perc[idper, :, idx], color=traj_colors[idx], alpha=0.25 )
+        ax.plot(time, traj_perc[len(qs)//2, :, idx], color=traj_colors[idx])
+
+        ax.plot(time, traj_det[0, :, idx], color=traj_colors[idx], linestyle='--', linewidth=3, label=f"{idx}")
+        # ax.plot(time, traj_stoch[:, :, idx].mean(axis=0), color=traj_colors[idx], linewidth=3)
+
+    ax.set(
+        xlabel="Time",
+        ylabel=r"Abundance $n_i$"
+    )
+    # ax.legend()
+
 ```
 
 
 ```{python}
-fig, ax = plt.subplots(1, 3, figsize=(16, 5), sharey=True)
+fig, ax = plt.subplots(2, 2, figsize=(12, 10))
 ax_r = ax[0]
-ax_sigma = ax[1]
-ax_Amat = ax[2]
+# ax_sigma = ax[1]
+ax_Amat = ax[1]
 
-ax_r.barh(np.arange(len(r)), r)
+ax_r.barh(species_ids, r)
 ax_r.set(
     ylabel=r"Species $i$",
     xlabel=r"Growth rate $r$"
 )
 
-ax_sigma.barh(np.arange(len(sigmas)), sigmas)
+# ax_sigma.barh(species_ids, sigmas)
+# ax_sigma.set(
+#     ylabel=r"Species $i$",
+#     xlabel=r"Noise intensity $\sigma$"
+# )
+
+# ax_sigma.barh(sigmas)
+plot_matrix_A(Amat, species_ids, ax=ax_Amat)
+```
+
+
+```{python}
+import matplotlib.pyplot as plt
+
+fig = plt.figure(figsize=(16, 10))
+gs = fig.add_gridspec(2, 3) # 2 rows, 3 columns
+
+# Row 1
+ax_r = fig.add_subplot(gs[0, 0])
+ax_Amat = fig.add_subplot(gs[0, 1], sharey=ax_r)
+ax_sigma = fig.add_subplot(gs[0, 2], sharey=ax_r)
+
+# Row 2 (Indices 1 for row, and 0 to 2 for columns)
+ax_Abun = fig.add_subplot(gs[1, :]) # The colon ':' means "span all columns"
+
+ax_r.barh(species_ids, r)
+ax_r.set(
+    ylabel=r"Species $i$",
+    xlabel=r"Growth rate $r$"
+)
+
+
+ax_sigma.barh(species_ids, sigmas)
 ax_sigma.set(
     ylabel=r"Species $i$",
     xlabel=r"Noise intensity $\sigma$"
 )
 
-# ax_sigma.barh(sigmas)
-plot_matrix_A(Amat, ax=ax_Amat)
+
+plot_matrix_A(Amat, species_ids, ax=ax_Amat)
+plot_percentiles_time(traj_stoch, species_ids, qs = [5, 25, 50, 75, 95], ax=ax_Abun)
+ax_Abun.legend(title=r"Species $i$")
+
+plt.tight_layout()
 ```
 
 
 Based on these trials calculate statistics and histograms
 
+
+
 ```{python}
-qs = [5, 25, 50, 75, 95]
-# qs = [5, 50, 95]
-traj_perc = np.percentile(traj_stoch, q=qs, axis=0)
-fig, ax = plt.subplots()
+import numpy as np
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
-for idx in range(len(species_ids)):
-# for idx in range(1):
-    for per, q in enumerate(qs):
-        ax.fill_between(time, traj_perc[len(qs)//2 , :, idx], traj_perc[per, :, idx], color=traj_colors[idx], alpha=0.25 )
-        ax.fill_between(time, traj_perc[len(qs)//2 , :, idx], traj_perc[per, :, idx], color=traj_colors[idx], alpha=0.25 )
-        # ax.plot(time, traj_perc[per, :, idx], color=traj_colors[idx])
-
-    ax.plot(time, traj_det[0, :, idx], color=traj_colors[idx], linestyle='--', linewidth=3)
-    # ax.plot(traj_stoch.mean(axis=0))
-
-ax.set(
-    xlabel="Time",
-    ylabel=r"$n_i$"
+# 1. Create the figure layout (1 row, 3 columns)
+fig = make_subplots(
+    rows=1, cols=3, 
+    shared_yaxes=True,
+    # subplot_titles=("Growth rate r", "Noise intensity σ", "Interaction matrix A"),
+    horizontal_spacing=0.1
 )
-# ax.legend()
+
+# 2. Add the Bar Charts (Subplots 1 and 2)
+fig.add_trace(
+    go.Bar(x=r, y=species_ids, orientation='h', name="r"),
+    row=1, col=1
+)
+
+fig.add_trace(
+    go.Bar(x=sigmas, y=species_ids, orientation='h', name="σ"),
+    row=1, col=2
+)
+
+# 3. Add the Heatmap (Subplot 3)
+max_abs_A = np.max(np.abs(Amat))
+
+fig.add_trace(
+    go.Heatmap(
+        z=Amat,
+        x=species_ids,
+        y=species_ids,
+        colorscale='RdBu_r', # Equivalent to coolwarm
+        zmin=-max_abs_A,
+        zmax=max_abs_A,
+        colorbar=dict(title="A", x=1.05, len=0.8),
+        name="Matrix A"
+    ),
+    row=1, col=3
+)
+
+# 4. Add Text Annotations to the Heatmap
+# Plotly's Heatmap doesn't automatically overlay text like ax.text in a loop
+# We use 'ff.create_annotated_heatmap' usually, but for subplots, we add annotations:
+for i, row_val in enumerate(Amat):
+    for j, value in enumerate(row_val):
+        fig.add_annotation(
+            dict(
+                x=species_ids[j],
+                y=species_ids[i],
+                text=f"{value:.2g}",
+                showarrow=False,
+                xref="x3", # Refers to the 3rd subplot's x-axis
+                yref="y3",
+                font=dict(color="black")
+            )
+        )
+
+# 5. Final Styling
+fig.update_layout(
+    height=500, 
+    width=1200, 
+    showlegend=False,
+    template="plotly_white"
+)
+
+fig.update_yaxes(title_text="$ Species \ i$", row=1, col=1)
+fig.update_xaxes(title_text="$Growth \ rate r$", row=1, col=1)
+fig.update_xaxes(title_text="$Noise intensity \\sigma$", row=1, col=2)
+fig.update_xaxes(title_text="$Species \  j$", row=1, col=3)
+
+fig.show()
 ```
 
-
-```{python}
-
-```
 
 ```{python}
 # len(cm.colors)
