@@ -26,8 +26,8 @@ int main() {
     std::string fln_interactions = "interaction_matrix_N_7.mat";
 
     // Outputs
-    std::string fln_diversity = "df_diversity_N_7.csv";
-    std::string fln_trajectories = "df_trajectories_N_7.csv";
+    std::string fln_diversity = "df_diversity_N_7.csv"; //"df_diversity_N_7.csv"
+    std::string fln_trajectories = "df_trajectories_N_7.csv"; //"df_trajectories_N_7.csv"
     double t_perturbation = 10;
     std::string fln_ABperturbation = "df_ABperturbation.csv";
 
