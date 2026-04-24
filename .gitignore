@@ -62,8 +62,21 @@ data/temp/
 *.toc
 *.synctex.gz
 
+# python cache
+__pycache__/
+*.pyc
+glv.egg-info/ 
+
+# Bibliography
+Bibliography/*.pdf
+Bibliography/*.djvu
+Bibliography/*.zip
+Bibliography/*.tar.gz
+
+
 
 # Ignore random temporal notes
 tmp.py
 tmp.qmd
 tmp.md
+.codex

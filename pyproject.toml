@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "glv"
+version = "0.1.0"
+description = "Research experiments to infer ecological dynamics from time series data."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "hydra-core",
+    "omegaconf",
+    "h5py",
+    "numpy",
+    "scipy",
+    # torch installed separately — see README (CPU vs CUDA differs)
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "black",
+    "ruff",
+    "mypy",
+]
+viz = [
+    "matplotlib",
+    "seaborn",
+]
+notebooks = [
+    "jupyter",
+    "ipykernel",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["theomodels*"]  # include theomodels/ and subpackages
+
+
+[project.scripts]
+glv-simulate = "scripts.simulate:main"
+glv-infer = "theomodels.inference:main"
+
+[tool.pytest.ini_options]
+addopts = "-ra -q"
+testpaths = ["tests"]
+
+[tool.black]
+line-length = 88
+
+[tool.ruff]
+line-length = 88
+select = ["E", "W", "F", "I", "UP"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_ignores = true
+ignore_missing_imports = true
