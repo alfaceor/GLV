@@ -1,0 +1,223 @@
+import pytest
+# from theomodels.io import *
+from theomodels.io import parse_noise_map, build_sigma
+from theomodels.config import Config, SelIdNoise, NoiseConfig
+
+
+from dataclasses import dataclass, field
+
+
+def test_parse_noise_map():
+    str_noise_map = '0:0.1;5:0.4' # into {0: 0.1, 2: 0.4}
+    assert isinstance(parse_noise_map(str_noise_map, 10), dict)
+    with pytest.raises(ValueError, match=r"Key .*"):
+        parse_noise_map(str_noise_map, 2)
+    
+    with pytest.raises(ValueError, match=r"Invalid pair .*"): 
+        str_noise_map = '0:0.1:0.1:0.7;5:0.4'
+        parse_noise_map(str_noise_map, 10)
+
+    # TODO: Assert that function raise a ValueError for parse_noise_map(str_noise_map, 3)
+    
+
+# def test_build_sigma_noise():
+#     raise NotImplementedError
+
+# def test_build_sigma_noise():
+#     raise NotImplementedError
+
+# def test_build_sigma():
+#     # Config(n_species=4, noise=uniform_noise)
+#     # cfg = MapNoise(default_std=0.0, noise_map_str="0:0.1,2:0.4")
+#     cfg = Config(n_species=4, noise=SelectedNoise(noise_map_str="0:0.1"))
+#     sigma = build_sigma(cfg, "cpu")
+#     assert sigma.shape == (4,)
+
+
+# def test_save_system_to_hdf5():
+#     save_system_to_hdf5()
+
+# # ── Fixtures ──────────────────────────────────────────────────────────────────
+
+# @pytest.fixture
+# def device():
+#     return torch.device("cpu")
+
+
+# @pytest.fixture
+# def uniform_noise():
+#     return UniformNoise(std=0.1)
+
+
+# @pytest.fixture
+# def map_noise():
+#     return MapNoise(default_std=0.0, noise_map_str="0:0.1,2:0.4")
+
+
+# @pytest.fixture
+# def base_cfg(uniform_noise):
+#     return Config(n_species=4, noise=uniform_noise)
+
+
+# # ── parse_noise_map ───────────────────────────────────────────────────────────
+
+# class TestParseNoiseMap:
+
+#     def test_basic_parsing(self):
+#         result = parse_noise_map("0:0.1,2:0.4", n_species=4)
+#         assert result == {0: 0.1, 2: 0.4}
+
+#     def test_empty_string(self):
+#         result = parse_noise_map("", n_species=4)
+#         assert result == {}
+
+#     def test_whitespace_string(self):
+#         result = parse_noise_map("   ", n_species=4)
+#         assert result == {}
+
+#     def test_single_pair(self):
+#         result = parse_noise_map("1:0.5", n_species=4)
+#         assert result == {1: 0.5}
+
+#     def test_all_species(self):
+#         result = parse_noise_map("0:0.1,1:0.2,2:0.3,3:0.4", n_species=4)
+#         assert result == {0: 0.1, 1: 0.2, 2: 0.3, 3: 0.4}
+
+#     def test_float_values(self):
+#         result = parse_noise_map("0:0.123456", n_species=4)
+#         assert pytest.approx(result[0]) == 0.123456
+
+#     def test_zero_value(self):
+#         result = parse_noise_map("0:0.0", n_species=4)
+#         assert result == {0: 0.0}
+
+#     def test_spaces_around_separator(self):
+#         result = parse_noise_map("0: 0.1, 2: 0.4", n_species=4)
+#         assert result == {0: 0.1, 2: 0.4}
+
+#     # ── Validation errors ─────────────────────────────────────────────────────
+
+#     def test_key_out_of_range_high(self):
+#         with pytest.raises(ValueError, match="out of range"):
+#             parse_noise_map("4:0.1", n_species=4)
+
+#     def test_key_negative(self):
+#         with pytest.raises(ValueError, match="out of range"):
+#             parse_noise_map("-1:0.1", n_species=4)
+
+#     def test_invalid_format_missing_colon(self):
+#         with pytest.raises(ValueError, match="Invalid pair"):
+#             parse_noise_map("0-0.1", n_species=4)
+
+#     def test_invalid_format_empty_pair(self):
+#         with pytest.raises(ValueError):
+#             parse_noise_map("0:0.1,,2:0.4", n_species=4)
+
+#     def test_invalid_value_not_float(self):
+#         with pytest.raises(ValueError):
+#             parse_noise_map("0:abc", n_species=4)
+
+#     def test_invalid_key_not_int(self):
+#         with pytest.raises(ValueError):
+#             parse_noise_map("a:0.1", n_species=4)
+
+
+# # ── build_sigma ───────────────────────────────────────────────────────────────
+
+# class TestBuildSigmaUniform:
+
+#     def test_uniform_default(self, base_cfg, device):
+#         sigma = build_sigma(base_cfg, device)
+#         expected = torch.full((4,), 0.1)
+#         assert torch.allclose(sigma, expected)
+
+#     def test_uniform_shape(self, base_cfg, device):
+#         sigma = build_sigma(base_cfg, device)
+#         assert sigma.shape == (4,)
+
+#     def test_uniform_custom_std(self, device):
+#         cfg = Config(n_species=4, noise=UniformNoise(std=0.5))
+#         sigma = build_sigma(cfg, device)
+#         assert torch.allclose(sigma, torch.full((4,), 0.5))
+
+#     def test_uniform_different_n_species(self, device):
+#         cfg = Config(n_species=8, noise=UniformNoise(std=0.1))
+#         sigma = build_sigma(cfg, device)
+#         assert sigma.shape == (8,)
+#         assert torch.allclose(sigma, torch.full((8,), 0.1))
+
+#     def test_uniform_device(self, base_cfg, device):
+#         sigma = build_sigma(base_cfg, device)
+#         assert sigma.device.type == "cpu"
+
+
+# class TestBuildSigmaMap:
+
+#     def test_map_basic(self, device):
+#         cfg = Config(n_species=4, noise=MapNoise(noise_map_str="0:0.1,2:0.4"))
+#         sigma = build_sigma(cfg, device)
+#         assert pytest.approx(sigma[0].item()) == 0.1
+#         assert pytest.approx(sigma[1].item()) == 0.0   # default
+#         assert pytest.approx(sigma[2].item()) == 0.4
+#         assert pytest.approx(sigma[3].item()) == 0.0   # default
+
+#     def test_map_default_std(self, device):
+#         cfg = Config(n_species=4, noise=MapNoise(default_std=0.2, noise_map_str="0:0.5"))
+#         sigma = build_sigma(cfg, device)
+#         assert pytest.approx(sigma[0].item()) == 0.5   # overridden
+#         assert pytest.approx(sigma[1].item()) == 0.2   # default_std
+#         assert pytest.approx(sigma[2].item()) == 0.2   # default_std
+#         assert pytest.approx(sigma[3].item()) == 0.2   # default_std
+
+#     def test_map_empty_string(self, device):
+#         cfg = Config(n_species=4, noise=MapNoise(default_std=0.3, noise_map_str=""))
+#         sigma = build_sigma(cfg, device)
+#         assert torch.allclose(sigma, torch.full((4,), 0.3))
+
+#     def test_map_shape(self, device):
+#         cfg = Config(n_species=4, noise=MapNoise(noise_map_str="0:0.1"))
+#         sigma = build_sigma(cfg, device)
+#         assert sigma.shape == (4,)
+
+#     def test_map_all_species_overridden(self, device):
+#         cfg = Config(n_species=4, noise=MapNoise(noise_map_str="0:0.1,1:0.2,2:0.3,3:0.4"))
+#         sigma = build_sigma(cfg, device)
+#         expected = torch.tensor([0.1, 0.2, 0.3, 0.4])
+#         assert torch.allclose(sigma, expected)
+
+
+# class TestBuildSigmaValidation:
+
+#     def test_unknown_target_raises(self, device):
+#         cfg = Config(n_species=4, noise=MapNoise(noise_map_str=""))
+#         cfg.noise._target_ = "Unknown"
+#         with pytest.raises(ValueError, match="Unknown noise target"):
+#             build_sigma(cfg, device)
+
+#     def test_map_key_out_of_range(self, device):
+#         cfg = Config(n_species=4, noise=MapNoise(noise_map_str="9:0.1"))
+#         with pytest.raises(ValueError, match="out of range"):
+#             build_sigma(cfg, device)
+
+
+# # ── resolve_device ────────────────────────────────────────────────────────────
+
+# class TestResolveDevice:
+
+#     def test_cpu(self):
+#         from io import resolve_device
+#         device = resolve_device("cpu")
+#         assert device == torch.device("cpu")
+
+#     def test_auto_returns_device(self):
+#         from io import resolve_device
+#         device = resolve_device("auto")
+#         assert device.type in ("cpu", "cuda")
+
+#     @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
+#     def test_cuda(self):
+#         from io import resolve_device
+#         device = resolve_device("cuda")
+#         assert device == torch.device("cuda")
+
+
