@@ -33,12 +33,14 @@ def parse_noise_map(noise_map_str: str, n_species: int) -> dict[int, float]:
 
 
 def build_sigma_all(cfg: Config, device: torch.device) -> torch.Tensor:
-    sigma = sigma = torch.full((cfg.n_species,), cfg.noise_std, device=device)
+    sigma = torch.full((cfg.n_species,), cfg.noise_std, device=device)
     return sigma
 
-# FIXME: Implement the rest of the sigma, noise amplitude, construction methods for each condition based on the cfg instance
-def get_sigma_single(cfg: Config, device: torch.device) -> torch.Tensor:
-    raise NotImplementedError
+def build_sigma_single(cfg: Config, device: torch.device) -> torch.Tensor:
+    sigma = torch.zeros(cfg.n_species, device=device)
+    sigma[cfg.index] = cfg.std
+    return sigma
+    # raise NotImplementedError
 
 
 def build_sigma_selid(cfg: Config, device: torch.device) -> torch.Tensor:
@@ -57,7 +59,7 @@ def build_sigma_selid(cfg: Config, device: torch.device) -> torch.Tensor:
     return sigma
 
 
-def get_sigma_noise(cfg: Config, device: torch.device) -> torch.Tensor:
+def build_sigma_noise(cfg: Config, device: torch.device) -> torch.Tensor:
     """Return the sigma tensor with the noise intensity for each species
 
     Args:
@@ -69,34 +71,37 @@ def get_sigma_noise(cfg: Config, device: torch.device) -> torch.Tensor:
     Returns:
         torch.Tensor: Noise intensity tensor
     """
-    if cfg.noise == "all":
+    if cfg.noise._target_ == "AllNoise":
         sigma = build_sigma_all(cfg, device)
-    elif cfg.noise == "single":
+    elif cfg.noise._target_ == "single":
         sigma = build_sigma_selid(cfg, device)
-    elif cfg.noise == "selid":
-        sigma = ""
-
-    raise NotImplementedError
-
-
-
-
-def build_sigma(cfg: Config, device: torch.device) -> torch.Tensor:
-    noise_target = cfg.noise._target_
-
-    if noise_target == "AllNoise":
-        sigma = torch.full((cfg.n_species,), cfg.noise.std, device=device)
-
-    elif noise_target == "SelectedNoise":
-        sigma = torch.full((cfg.n_species,), cfg.noise.default_std, device=device)
-        noise_map = parse_noise_map(cfg.noise.noise_map_str, cfg.n_species)
-        for key, value in noise_map.items():
-            sigma[key] = value
-
+    elif cfg.noise._target_ == "selid":
+        sigma = build_sigma_selid(cfg, device)
+    elif cfg.noise._target_ == "none":
+        sigma = None
     else:
-        raise ValueError(f"Unknown noise target: '{noise_target}'")
-
+        raise ValueError("Unknow noise configuration")
     return sigma
+
+
+
+
+# def build_sigma(cfg: Config, device: torch.device) -> torch.Tensor:
+#     noise_target = cfg.noise._target_
+
+#     if noise_target == "AllNoise":
+#         sigma = torch.full((cfg.n_species,), cfg.noise.std, device=device)
+
+#     elif noise_target == "SelectedNoise":
+#         sigma = torch.full((cfg.n_species,), cfg.noise.default_std, device=device)
+#         noise_map = parse_noise_map(cfg.noise.noise_map_str, cfg.n_species)
+#         for key, value in noise_map.items():
+#             sigma[key] = value
+
+#     else:
+#         raise ValueError(f"Unknown noise target: '{noise_target}'")
+
+#     return sigma
 
 
 
