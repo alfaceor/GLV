@@ -1,5 +1,6 @@
 import pytest
 import torch
+import numpy as np
 # from theomodels.io import *
 from theomodels.io import parse_noise_map, build_sigma_noise
 from theomodels.config import (
@@ -13,7 +14,7 @@ from theomodels.config import (
 
 
 from dataclasses import dataclass, field
-
+from theomodels.io import save_system_to_hdf5, load_system_from_hdf5
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -118,14 +119,14 @@ def all_noise():
     return AllNoise(std=0.1)
 
 
-# @pytest.fixture
-# def map_noise():
-#     return MapNoise(default_std=0.0, noise_map_str="0:0.1,2:0.4")
+@pytest.fixture
+def map_noise():
+    return SelIdNoise(default_std=0.0, noise_map_str="0:0.1;2:0.4")
 
 
 @pytest.fixture
 def base_cfg(all_noise):
-    return Config(n_species=4, noise=uniform_noise)
+    return Config(n_species=4, noise=all_noise)
 
 
 # ── build_sigma ───────────────────────────────────────────────────────────────
@@ -206,24 +207,74 @@ class TestBuildSigmaUniform:
 #             build_sigma(cfg, device)
 
 
-# # ── resolve_device ────────────────────────────────────────────────────────────
 
-# class TestResolveDevice:
 
-#     def test_cpu(self):
-#         from io import resolve_device
-#         device = resolve_device("cpu")
-#         assert device == torch.device("cpu")
+# ── save_system_to_hdf5 ────────────────────────────────────────────────────────────
 
-#     def test_auto_returns_device(self):
-#         from io import resolve_device
-#         device = resolve_device("auto")
-#         assert device.type in ("cpu", "cuda")
+@pytest.fixture
+def sample_system():
+    n = 4
+    return {
+        "A": np.ones((n, n)),
+        "r": np.ones(n),
+        "X0": np.arange(n, dtype=np.float64)
+    }
 
-#     @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
-#     def test_cuda(self):
-#         from io import resolve_device
-#         device = resolve_device("cuda")
-#         assert device == torch.device("cuda")
+class TestSaveSystemHDF5:
+    
+    def test_sample_system(self, sample_system):
+        n = 4
+        A = sample_system["A"]
+        r = sample_system["r"]
+        X0 = sample_system["X0"]
+        assert A.shape == (n, n)
+        assert r.shape == (n,)
+        assert X0.shape == (n,)
+        assert isinstance(A, np.ndarray)
+
+    def test_save_system_to_hdf5(self, tmp_path, sample_system):
+        tmp_filepath = tmp_path / "test_hdf5.h5"
+        A = sample_system["A"]
+        r = sample_system["r"]
+        X0 = sample_system["X0"]
+        save_system_to_hdf5(tmp_filepath, A, r, X0)
+        data = load_system_from_hdf5(tmp_filepath)
+        assert isinstance(data, dict)
+        A_loaded = data["A"]
+        r_loaded = data["r"]
+        X0_loaded = data["X0"]
+        assert isinstance(A_loaded, np.ndarray)
+        assert A_loaded.shape == A.shape
+        assert r_loaded.shape == r.shape
+        assert X0_loaded.shape == X0.shape
+        np.testing.assert_allclose(A, A_loaded, rtol=1e-5)
+        np.testing.assert_allclose(r, r_loaded, rtol=1e-5)
+        np.testing.assert_allclose(X0, X0_loaded, rtol=1e-5)
+
+    def test_load_missing_file_raises(self, tmp_path):
+        with pytest.raises(FileNotFoundError):
+            load_system_from_hdf5(tmp_path / "does_not_exist.h5")
+
+
+
+# ── resolve_device ────────────────────────────────────────────────────────────
+
+class TestResolveDevice:
+
+    def test_cpu(self):
+        from io import resolve_device
+        device = resolve_device("cpu")
+        assert device == torch.device("cpu")
+
+    def test_auto_returns_device(self):
+        from io import resolve_device
+        device = resolve_device("auto")
+        assert device.type in ("cpu", "cuda")
+
+    @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
+    def test_cuda(self):
+        from io import resolve_device
+        device = resolve_device("cuda")
+        assert device == torch.device("cuda")
 
 

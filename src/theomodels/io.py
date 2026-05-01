@@ -5,6 +5,29 @@ from theomodels.config import Config
 import h5py
 import numpy as np
 from pathlib import Path
+from typing import Union
+import platform
+import numpy as np
+from typing import TypedDict
+
+
+
+class GLVParams(TypedDict):
+    A: np.ndarray
+    r: np.ndarray
+    X0: np.ndarray
+
+class NoiseParams(TypedDict):
+    sigma: np.ndarray
+
+
+_HDF5_KEY_A   = "system/A"
+_HDF5_KEY_R   = "system/r"
+_HDF5_KEY_X0  = "system/X0"
+_HDF5_KEY_TRAJ = "traj"
+_HDF5_KEY_TIME = "time"
+_HDF5_KEY_SIGMA = "noise/sigma"
+
 
 
 def resolve_device(device_str: str) -> torch.device:
@@ -31,9 +54,8 @@ def parse_noise_map(noise_map_str: str, n_species: int) -> dict[int, float]:
     return noise_map
 
 
-
 def build_sigma_all(cfg: Config, device: torch.device) -> torch.Tensor:
-    sigma = torch.full((cfg.n_species,), cfg.noise_std, device=device)
+    sigma = torch.full((cfg.n_species,), cfg.noise.std, device=device)
     return sigma
 
 def build_sigma_single(cfg: Config, device: torch.device) -> torch.Tensor:
@@ -43,18 +65,16 @@ def build_sigma_single(cfg: Config, device: torch.device) -> torch.Tensor:
     # raise NotImplementedError
 
 
-def build_sigma_selid(cfg: Config, device: torch.device) -> torch.Tensor:
-    # generate dictionary
-
-    sigma = torch.full((cfg.n_species,), cfg.default_std, device=device)
-    # TODO: Finish implementation:    
-    base_std = cfg.noise_std
+def build_sigma_selid(cfg: Config, device: torch.device) -> torch.Tensor:    
+    base_std = cfg.noise.default_std
+    sigma = torch.full((cfg.n_species,), base_std, device=device)
+    # sigma = torch.full((cfg.n_species,), cfg.default_std, device=device)
     noise_map = parse_noise_map(cfg.noise_map_str, cfg.n_species)
     try:
-        for key, value in cfg.noise.noise_map.items():
+        for key, value in noise_map.items():
             sigma[key] = value
     except Exception as e:
-        print(e)
+        # print(e)
         raise e
     return sigma
 
@@ -73,66 +93,129 @@ def build_sigma_noise(cfg: Config, device: torch.device) -> torch.Tensor:
     """
     if cfg.noise._target_ == "AllNoise":
         sigma = build_sigma_all(cfg, device)
-    elif cfg.noise._target_ == "single":
+    elif cfg.noise._target_ == "SingleNoise":
+        sigma = build_sigma_single(cfg, device)
+    elif cfg.noise._target_ == "SelIdNoise":
         sigma = build_sigma_selid(cfg, device)
-    elif cfg.noise._target_ == "selid":
-        sigma = build_sigma_selid(cfg, device)
-    elif cfg.noise._target_ == "none":
+    elif cfg.noise._target_ == "NoneNoise":
         sigma = None
     else:
         raise ValueError("Unknow noise configuration")
     return sigma
 
 
-
-
-# def build_sigma(cfg: Config, device: torch.device) -> torch.Tensor:
-#     noise_target = cfg.noise._target_
-
-#     if noise_target == "AllNoise":
-#         sigma = torch.full((cfg.n_species,), cfg.noise.std, device=device)
-
-#     elif noise_target == "SelectedNoise":
-#         sigma = torch.full((cfg.n_species,), cfg.noise.default_std, device=device)
-#         noise_map = parse_noise_map(cfg.noise.noise_map_str, cfg.n_species)
-#         for key, value in noise_map.items():
-#             sigma[key] = value
-
-#     else:
-#         raise ValueError(f"Unknown noise target: '{noise_target}'")
-
-#     return sigma
-
-
-
-
 def save_system_to_hdf5(
-    filepath: Path,
-    cfg: Config,
-    A: torch.Tensor,
-    r: torch.Tensor,
-    X0: torch.Tensor,
-    metadata: dict[str, str],
+    filepath: Union[Path, str],
+    A: np.ndarray,
+    r: np.ndarray,
+    X0: np.ndarray,
 ) -> None:
     """ Save growth rate, interaction matrices with implicit carrying capacities
-
     Args:
         filepath (Path): filepath to save data in h5 file format
-        cfg (Config): configuration data
-        A (torch.Tensor): Interaction matrix between species
-        r (torch.Tensor): growth rate
-        X0 (torch.Tensor): initial conditions
-        metadata (dict[str, str]): system creation metadata
+        A (np.ndarray): Interaction matrix between species
+        r (np.ndarray): growth rate
+        X0 (np.ndarray): initial conditions
     """
+    if isinstance(filepath, str):
+        filepath = Path(filepath)
     filepath.parent.mkdir(parents=True, exist_ok=True)
 
-    with h5py.File(filepath, "w") as h5:
-        h5.create_dataset("system/A", data=A.cpu().numpy())
-        h5.create_dataset("system/r", data=r.cpu().numpy())
-        h5.create_dataset("system/X0", data=X0.cpu().numpy())
+    if np.any(np.isnan(A)) or np.any(np.isinf(A)):
+        raise ValueError("Interaction matrix A contains NaN or Inf values")
 
+    if A.shape[0] != A.shape[1]:
+        raise ValueError(f"A must be square, got shape {A.shape}")
+    if A.shape[0] != r.shape[0]:
+        raise ValueError(f"A and r dimensions must match: {A.shape[0]} vs {r.shape[0]}")
+
+    with h5py.File(filepath, "w") as h5:
+        dtattr = h5py.string_dtype(encoding="utf-8")
+        h5.create_dataset(_HDF5_KEY_A, data=A, dtype=np.float64, compression="gzip", compression_opts=4)
+        h5.create_dataset(_HDF5_KEY_R, data=r, dtype=np.float64, compression="gzip", compression_opts=4)
+        h5.create_dataset(_HDF5_KEY_X0, data=X0, dtype=np.float64, compression="gzip", compression_opts=4)
+        # FIXME: Evaluate if it is better to create a group and place it as metadata all attributes bellow
+        h5.attrs.create("torch_version", torch.__version__, dtype=dtattr)
+        # h5.attrs["torch_version"] = np.string_(torch.__version__) #.encode("utf-8")
+        h5.attrs["numpy_version"] = np.__version__
+        h5.attrs["python_version"] = platform.python_version()
+        h5.attrs["schema_version"] = "1.0"
+        h5.attrs["created_with"] = "theomodels"
+
+
+def load_system_from_hdf5(
+    filepath: Union[Path, str]
+) -> GLVParams:
+    """Load system data from hdf5
+    Args:
+        filepath (Path): Path of hdf5 file
+    Returns:
+        dict: dictionary of numpy arrays with keys
+        A: interaction matrix between species,
+        r: growth rate,
+        X0: initial conditions
+    """
+    if isinstance(filepath, str):
+        filepath = Path(filepath)
+    if not filepath.exists():
+        raise FileNotFoundError(f"HDF5 file not found: {filepath}")
+    with h5py.File(filepath, "r") as h5:
+        data = {
+            "A": h5[_HDF5_KEY_A][:],
+            "r": h5[_HDF5_KEY_R][:],
+            "X0": h5[_HDF5_KEY_X0][:]
+        }
+    return data
+
+
+def save_traj_to_hdf5(
+    filepath: Path,
+    cfg: Config,
+    traj: np.ndarray,
+    time: np.ndarray,
+    A: np.ndarray,
+    r: np.ndarray,
+    X0: np.ndarray,
+    sigma: Union[np.ndarray, None],
+    metadata: dict[str, str],
+) -> None:
+    """Save trajectory data to hdf5
+    Args:
+        filepath (Path): filepath to save data in h5 file format
+        cfg (Config): configuration object
+        traj (np.ndarray): trajectory data
+        time (np.ndarray): time points
+        A (np.ndarray): Interaction matrix between species
+        r (np.ndarray): growth rate
+        X0 (np.ndarray): initial conditions
+        sigma (np.ndarray or None): noise term, or None if deterministic
+        metadata (dict[str, str]): dictionary of metadata key-value pairs
+    """
+    filepath.parent.mkdir(parents=True, exist_ok=True)
+    with h5py.File(filepath, "w") as h5:
+        h5.create_dataset(_HDF5_KEY_TRAJ, data=traj)
+        h5.create_dataset(_HDF5_KEY_TIME, data=time)
+        h5.create_dataset(_HDF5_KEY_A, data=A)
+        h5.create_dataset(_HDF5_KEY_R, data=r)
+        h5.create_dataset(_HDF5_KEY_X0, data=X0)
+        if sigma is not None:
+            h5.create_dataset(_HDF5_KEY_SIGMA, data=sigma)
+        cfg_group = h5.create_group("config")
+        for key, value in vars(cfg).items():
+            if value is None:
+                continue
+            cfg_group.attrs[key] = str(value)
+        meta_group = h5.create_group("metadata")
+        for key, value in metadata.items():
+            meta_group.attrs[key] = value
 
 def explore(name, obj):
+    """Print hdf5 Dataset attributes, shape and dtype
+
+    Args:
+        name (_type_): _description_
+        obj (_type_): _description_
+    """
     print(name)
     if isinstance(obj, h5py.Dataset):
         print("  shape:", obj.shape)
