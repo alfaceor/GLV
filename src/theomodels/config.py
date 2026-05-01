@@ -45,7 +45,7 @@ class SystemConfig:
 class Config:
     defaults: list[Any] = field(default_factory=lambda: [
         "_self_",
-        {"noise": "all"},   # declares noise as a swappable group
+        {"noise": "none"},   # declares noise as a swappable group
     ])
     n_species: int = 4
     dt: float = 0.01

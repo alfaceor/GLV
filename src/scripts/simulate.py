@@ -58,7 +58,14 @@ def main(cfg: Config) -> None:
     output_dir = Path(cfg.output_dir)
     fln_system = output_dir / f"{cfg.run_name}_n_{cfg.n_species}_system.h5"
 
-    save_system_to_hdf5(fln_system, cfg, A, r, X0, metadata)
+    save_system_to_hdf5(
+        fln_system,
+        cfg,
+        A.cpu().numpy(),
+        r.cpu().numpy(),
+        X0.cpu().numpy(),
+        metadata
+        )
 
     # 2. simulate data
     if cfg.noise._target_ == "NoneNoise":
@@ -95,10 +102,10 @@ def main(cfg: Config) -> None:
             cfg,
             traj=traj,
             time=tt,
-            A=A,
-            r=r,
-            X0=X0,
-            sigma=sigma,
+            A=A.cpu().numpy(),
+            r=r.cpu().numpy(),
+            X0=X0.cpu().numpy(),
+            sigma=sigma.cpu().numpy(),
             metadata=metadata,
         )
         print(f"Saved simulation results to {filename}")
@@ -108,52 +115,6 @@ def main(cfg: Config) -> None:
     # - Make an option to decide if trajectories should be keep in memory and to save them in a hdf5 file
     # - 
 
-    # FIXME: Move noise implementation to theomodels.io or theomodels.config?
-
-    # if cfg.noise == "all":
-    #     sigma = torch.full((cfg.n_species,), cfg.noise_std, device=device)
-    # elif cfg.noise == "selid":
-    #     sigma = torch.zeros(cfg.n_species)
-    #     try:
-    #         for key, value in cfg.noise.noise_map.items():
-    #             sigma[key] = value
-    #     except Exception e:
-    #         print(e)
-
-    # deter_traj = simulate(A, r, X0, cfg.dt, cfg.steps)
-    # stoch_traj = simulate(
-    #     A,
-    #     r,
-    #     X0,
-    #     cfg.dt,
-    #     cfg.steps,
-    #     sigma=sigma,
-    #     n_trials=cfg.n_trials,
-    # )
-
-    # if cfg.save_results:
-    #     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    #     output_dir = Path(cfg.output_dir)
-    #     filename = output_dir / f"{cfg.run_name}_results.h5"
-    #     metadata = {
-    #         "device": str(device),
-    #         "timestamp": timestamp,
-    #         "system_mode": cfg.system_mode,
-    #     }
-    #     save_to_hdf5(
-    #         filename,
-    #         cfg,
-    #         deterministic=deter_traj,
-    #         stochastic=stoch_traj,
-    #         A=A,
-    #         r=r,
-    #         X0=X0,
-    #         sigma=sigma,
-    #         metadata=metadata,
-    #     )
-    #     print(f"Saved simulation results to {filename}")
-
-    # tt = torch.arange(deter_traj.size(1)) * cfg.dt
 
     # fig, ax = plt.subplots(3, 1, figsize=(10, 8))
     # ax_traj, ax_matrix, ax_species_ij = ax
