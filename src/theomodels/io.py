@@ -167,10 +167,9 @@ def load_system_from_hdf5(
         }
     return data
 
-
+# TODO: Write the pytest for this function
 def save_traj_to_hdf5(
     filepath: Path,
-    cfg: Config,
     traj: np.ndarray,
     time: np.ndarray,
     A: np.ndarray,
@@ -178,11 +177,11 @@ def save_traj_to_hdf5(
     X0: np.ndarray,
     sigma: Union[np.ndarray, None],
     metadata: dict[str, str],
+    cfg: Config,
 ) -> None:
     """Save trajectory data to hdf5
     Args:
         filepath (Path): filepath to save data in h5 file format
-        cfg (Config): configuration object
         traj (np.ndarray): trajectory data
         time (np.ndarray): time points
         A (np.ndarray): Interaction matrix between species
@@ -190,14 +189,18 @@ def save_traj_to_hdf5(
         X0 (np.ndarray): initial conditions
         sigma (np.ndarray or None): noise term, or None if deterministic
         metadata (dict[str, str]): dictionary of metadata key-value pairs
+        cfg (Config): configuration object
     """
     filepath.parent.mkdir(parents=True, exist_ok=True)
+
+    save_system_to_hdf5(filepath, A, r, X0)
+
     with h5py.File(filepath, "w") as h5:
         h5.create_dataset(_HDF5_KEY_TRAJ, data=traj)
         h5.create_dataset(_HDF5_KEY_TIME, data=time)
-        h5.create_dataset(_HDF5_KEY_A, data=A)
-        h5.create_dataset(_HDF5_KEY_R, data=r)
-        h5.create_dataset(_HDF5_KEY_X0, data=X0)
+        # h5.create_dataset(_HDF5_KEY_A, data=A)
+        # h5.create_dataset(_HDF5_KEY_R, data=r)
+        # h5.create_dataset(_HDF5_KEY_X0, data=X0)
         if sigma is not None:
             h5.create_dataset(_HDF5_KEY_SIGMA, data=sigma)
         cfg_group = h5.create_group("config")
