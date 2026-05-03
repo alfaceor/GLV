@@ -76,7 +76,7 @@ class Config:
     save_results: bool = True
     output_dir: str = "data/simul"
     run_name: str = "glv_sim"
-    noise: NoiseConfig = field(default_factory=NoneNoise)
+    noise: NoiseConfig = field(default_factory=NoiseConfig)
 
 
 

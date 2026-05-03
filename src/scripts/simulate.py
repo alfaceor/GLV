@@ -69,7 +69,7 @@ def main(cfg: Config) -> None:
         )
 
     # 2. simulate data
-    if cfg.noise._target_ == "NoneNoise":
+    if cfg.noise.type == "NoneNoise":
         sigma = None
         traj = simulate(A, r, X0, cfg.dt, cfg.steps)
     else:

@@ -10,7 +10,17 @@ import platform
 import numpy as np
 from typing import TypedDict
 
-from theomodels.constants import *
+from theomodels.constants import (
+    _HDF5_GRP_KEY_SYSTEM,
+    _HDF5_GRP_KEY_NOISE,
+    _HDF5_GRP_KEY_CONFIG,
+    _HDF5_KEY_A,
+    _HDF5_KEY_R,
+    _HDF5_KEY_X0,
+    _HDF5_KEY_TRAJ,
+    _HDF5_KEY_TIME,
+    _HDF5_KEY_SIGMA
+)
 
 
 
@@ -61,7 +71,7 @@ def build_sigma_all(cfg: Config, device: torch.device) -> torch.Tensor:
 
 def build_sigma_single(cfg: Config, device: torch.device) -> torch.Tensor:
     sigma = torch.zeros(cfg.n_species, device=device)
-    sigma[cfg.index] = cfg.std
+    sigma[cfg.noise.index] = cfg.noise.std
     return sigma
     # raise NotImplementedError
 
@@ -92,13 +102,13 @@ def build_sigma_noise(cfg: Config, device: torch.device) -> torch.Tensor:
     Returns:
         torch.Tensor: Noise intensity tensor
     """
-    if cfg.noise._target_ == "AllNoise":
+    if cfg.noise.type == "AllNoise":
         sigma = build_sigma_all(cfg, device)
-    elif cfg.noise._target_ == "SingleNoise":
+    elif cfg.noise.type == "SingleNoise":
         sigma = build_sigma_single(cfg, device)
-    elif cfg.noise._target_ == "SelIdNoise":
+    elif cfg.noise.type == "SelIdNoise":
         sigma = build_sigma_selid(cfg, device)
-    elif cfg.noise._target_ == "NoneNoise":
+    elif cfg.noise.type == "NoneNoise":
         sigma = None
     else:
         raise ValueError("Unknow noise configuration")

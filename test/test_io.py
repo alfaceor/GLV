@@ -8,7 +8,7 @@ from theomodels.io import (
     save_system_to_hdf5,
     load_system_from_hdf5,
     save_traj_to_hdf5,
-    load_traj_to_hdf5
+    load_traj_from_hdf5
 )
 from theomodels.config import (
     Config, 
@@ -19,6 +19,7 @@ from theomodels.config import (
     SelIdNoise
     )
 
+from theomodels.io import resolve_device
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -299,18 +300,15 @@ class TestSaveTrajHDF5:
 class TestResolveDevice:
 
     def test_cpu(self):
-        from io import resolve_device
         device = resolve_device("cpu")
         assert device == torch.device("cpu")
 
     def test_auto_returns_device(self):
-        from io import resolve_device
         device = resolve_device("auto")
         assert device.type in ("cpu", "cuda")
 
     @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
     def test_cuda(self):
-        from io import resolve_device
         device = resolve_device("cuda")
         assert device == torch.device("cuda")
 
