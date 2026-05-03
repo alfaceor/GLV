@@ -1,4 +1,4 @@
-# config.py
+from abc import ABC
 from dataclasses import dataclass, field
 from typing import Any
 from hydra.core.config_store import ConfigStore
@@ -10,19 +10,19 @@ class NoiseConfig:
 
 @dataclass
 class NoneNoise(NoiseConfig):
-    _target_: str = "NoneNoise"
+    type: str = "NoneNoise"
 
 @dataclass
 class SingleNoise(NoiseConfig):
     std: float = 0.1
     index: int = 0
-    _target_: str = "SingleNoise"
+    type: str = "SingleNoise"
     # hydra cli = single
 
 @dataclass
 class AllNoise(NoiseConfig):
     std: float = 0.1
-    _target_: str = "AllNoise" # Helper tag for logic
+    type: str = "AllNoise" # Helper tag for logic
     # hydra cli = all
 
 @dataclass
@@ -31,14 +31,32 @@ class SelIdNoise(NoiseConfig):
     # This allows specific overrides
     # noise_map: dict[int, float] = field(default_factory=dict)
     default_std: float = 0.0
-    _target_: str = "SelIdNoise"
+    type: str = "SelIdNoise"
     # hydra cli = selected
 
 
+# TODO: Implement system parameters to select different base models
 @dataclass
-class SystemConfig:
+class SystemConfig(ABC):
     pass # Abstract Base Class for system configuration
 
+# FIXME: TO BE DECIDED
+# NOTE: Future implementation
+# TBD: To be decided if the class will use a file or random generator
+# meanwhile defined as an abstract class
+@dataclass
+class GLVSystem(ABC):
+    h5input: str = "<path>.h5"
+    mode: str = "feasible"
+    type: str = "GLVSystem"
+
+
+# FIXME: TO BE DECIDED
+# NOTE: Future implementation
+@dataclass
+class CRSystem(ABC):
+    h5input: str = "<path>.h5"
+    type: str = "CRSystem"
 
 
 @dataclass
@@ -53,12 +71,12 @@ class Config:
     n_trials: int = 10
     # noise_std: float = 0.1
     seed: int | None = 42
-    system_mode: str = "feasible"
+    system_mode: str = "feasible" # FIXME: Change system mode to system type
     device: str = "auto"
     save_results: bool = True
     output_dir: str = "data/simul"
     run_name: str = "glv_sim"
-    noise: NoiseConfig = field(default_factory=NoiseConfig)
+    noise: NoiseConfig = field(default_factory=NoneNoise)
 
 
 

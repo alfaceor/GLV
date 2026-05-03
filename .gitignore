@@ -51,6 +51,10 @@ data/temp/
 *_cache/
 *_files/
 
+
+# Quarto files to ignore
+*.js
+
 # LaTeX files
 *.log
 *.aux

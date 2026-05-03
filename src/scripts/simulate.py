@@ -58,13 +58,14 @@ def main(cfg: Config) -> None:
     output_dir = Path(cfg.output_dir)
     fln_system = output_dir / f"{cfg.run_name}_n_{cfg.n_species}_system.h5"
 
+    # TODO: Resolve the accordance with the refactored function
+    # there should an option to use an already generated file
+    # the output should be a file that will be use for a 
     save_system_to_hdf5(
         fln_system,
-        cfg,
         A.cpu().numpy(),
         r.cpu().numpy(),
         X0.cpu().numpy(),
-        metadata
         )
 
     # 2. simulate data
@@ -87,7 +88,7 @@ def main(cfg: Config) -> None:
     if cfg.save_results:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         output_dir = Path(cfg.output_dir)
-        if cfg.noise._target_ == "NoneNoise":
+        if cfg.noise.type == "NoneNoise":
             filename = output_dir / f"{cfg.run_name}_n_{cfg.n_species}_traj.h5"
         else:
             filename = output_dir / f"{cfg.run_name}_n_{cfg.n_species}_traj_{cfg.noise._target_}.h5"
@@ -97,23 +98,21 @@ def main(cfg: Config) -> None:
             "system_mode": cfg.system_mode,
             "noise": cfg.noise
         }
+        sigma_val = sigma.cpu().numpy() if sigma is not None else None
+        
         save_traj_to_hdf5(
             filename,
-            cfg,
-            traj=traj,
-            time=tt,
+            traj=traj.cpu().numpy(),
+            time=tt.cpu().numpy(),
             A=A.cpu().numpy(),
             r=r.cpu().numpy(),
             X0=X0.cpu().numpy(),
-            sigma=sigma.cpu().numpy(),
+            sigma=sigma_val,
             metadata=metadata,
+            cfg=cfg,
         )
         print(f"Saved simulation results to {filename}")
 
-
-    # TODO: FUTURE IMPLEMENTATIONS
-    # - Make an option to decide if trajectories should be keep in memory and to save them in a hdf5 file
-    # - 
 
 
     # fig, ax = plt.subplots(3, 1, figsize=(10, 8))

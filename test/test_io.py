@@ -1,8 +1,15 @@
 import pytest
 import torch
 import numpy as np
-# from theomodels.io import *
-from theomodels.io import parse_noise_map, build_sigma_noise
+from dataclasses import dataclass, field
+from theomodels.io import (
+    parse_noise_map,
+    build_sigma_noise,
+    save_system_to_hdf5,
+    load_system_from_hdf5,
+    save_traj_to_hdf5,
+    load_traj_to_hdf5
+)
 from theomodels.config import (
     Config, 
     NoiseConfig, 
@@ -13,8 +20,6 @@ from theomodels.config import (
     )
 
 
-from dataclasses import dataclass, field
-from theomodels.io import save_system_to_hdf5, load_system_from_hdf5
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -256,6 +261,38 @@ class TestSaveSystemHDF5:
             load_system_from_hdf5(tmp_path / "does_not_exist.h5")
 
 
+class TestSaveTrajHDF5:
+    # TODO: Make a test to 
+    # Test the corr
+    def test_save_traj_to_hdf5_with_sigma_tensor(self, tmp_path):
+        # --- Arrange ---
+        filename = tmp_path / "test_output.h5"
+        traj = np.random.normal(10, 3)
+        tt = np.linspace(0, 1, 10)
+        A = np.eye(3)
+        r = np.zeros(3)
+        X0 = np.zeros(3)
+        sigma = np.array([0.1, 0.2, 0.3])
+        metadata = {"experiment": "test"}
+        cfg = {"version": 1.0}
+        
+        # --- Act ---
+        save_traj_to_hdf5(
+            filepath=filename,
+            traj=traj,
+            time=tt,
+            A=A,
+            r=r,
+            X0=X0,
+            sigma=sigma,
+            metadata=metadata,
+            cfg=cfg
+        )
+
+        # --- Assert ---
+        assert filename.exists()
+        
+    
 
 # ── resolve_device ────────────────────────────────────────────────────────────
 

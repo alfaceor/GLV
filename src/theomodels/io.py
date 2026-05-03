@@ -10,23 +10,24 @@ import platform
 import numpy as np
 from typing import TypedDict
 
+from theomodels.constants import *
 
 
-class GLVParams(TypedDict):
+
+
+class SystemParams(TypedDict):
     A: np.ndarray
     r: np.ndarray
     X0: np.ndarray
 
+# TBD: to be decided Should one noise class dict be good? 
 class NoiseParams(TypedDict):
     sigma: np.ndarray
 
-
-_HDF5_KEY_A   = "system/A"
-_HDF5_KEY_R   = "system/r"
-_HDF5_KEY_X0  = "system/X0"
-_HDF5_KEY_TRAJ = "traj"
-_HDF5_KEY_TIME = "time"
-_HDF5_KEY_SIGMA = "noise/sigma"
+# TBD:   
+class TrajData(TypedDict):
+    traj: np.ndarray
+    time: np.ndarray
 
 
 
@@ -145,7 +146,7 @@ def save_system_to_hdf5(
 
 def load_system_from_hdf5(
     filepath: Union[Path, str]
-) -> GLVParams:
+) -> SystemParams:
     """Load system data from hdf5
     Args:
         filepath (Path): Path of hdf5 file
@@ -169,7 +170,7 @@ def load_system_from_hdf5(
 
 # TODO: Write the pytest for this function
 def save_traj_to_hdf5(
-    filepath: Path,
+    filepath: Union[Path, str],
     traj: np.ndarray,
     time: np.ndarray,
     A: np.ndarray,
@@ -177,7 +178,7 @@ def save_traj_to_hdf5(
     X0: np.ndarray,
     sigma: Union[np.ndarray, None],
     metadata: dict[str, str],
-    cfg: Config,
+    cfg: Union[Config, None],
 ) -> None:
     """Save trajectory data to hdf5
     Args:
@@ -191,6 +192,9 @@ def save_traj_to_hdf5(
         metadata (dict[str, str]): dictionary of metadata key-value pairs
         cfg (Config): configuration object
     """
+    if isinstance(filepath, str):
+        filepath = Path(filepath)
+
     filepath.parent.mkdir(parents=True, exist_ok=True)
 
     save_system_to_hdf5(filepath, A, r, X0)
@@ -203,14 +207,24 @@ def save_traj_to_hdf5(
         # h5.create_dataset(_HDF5_KEY_X0, data=X0)
         if sigma is not None:
             h5.create_dataset(_HDF5_KEY_SIGMA, data=sigma)
+        
+        # FIXME: The problem is with the vars, I don't know exactly why
         cfg_group = h5.create_group("config")
-        for key, value in vars(cfg).items():
-            if value is None:
-                continue
-            cfg_group.attrs[key] = str(value)
+        # for key, value in vars(cfg).items():
+        #     if value is None:
+        #         continue
+        #     cfg_group.attrs[key] = str(value)
         meta_group = h5.create_group("metadata")
         for key, value in metadata.items():
             meta_group.attrs[key] = value
+
+
+#TODO: Load trajectories from hdf5 file and return dict with data with numpy arrays
+def load_traj_from_hdf5(filepath: Union[Path, str]):
+    if isinstance(filepath, str):
+        filepath = Path(filepath)
+
+    raise NotImplementedError
 
 def explore(name, obj):
     """Print hdf5 Dataset attributes, shape and dtype
