@@ -1,6 +1,4 @@
 import torch
-# from dataclasses import dataclass, field
-# from typing import Any
 from theomodels.config import Config
 import h5py
 import numpy as np
@@ -9,6 +7,8 @@ from typing import Union
 import platform
 import numpy as np
 from typing import TypedDict
+from omegaconf import DictConfig, OmegaConf
+import json
 
 from theomodels.constants import (
     _HDF5_GRP_KEY_SYSTEM,
@@ -188,7 +188,7 @@ def save_traj_to_hdf5(
     X0: np.ndarray,
     sigma: Union[np.ndarray, None],
     metadata: dict[str, str],
-    cfg: Union[Config, None],
+    cfg: Union[Config, DictConfig, None],
 ) -> None:
     """Save trajectory data to hdf5
     Args:
@@ -219,14 +219,18 @@ def save_traj_to_hdf5(
             h5.create_dataset(_HDF5_KEY_SIGMA, data=sigma)
         
         # FIXME: The problem is with the vars, I don't know exactly why
-        cfg_group = h5.create_group("config")
+        # cfg_group = h5.create_group("config")
+        cfg_grp_config = h5.create_group("config")
+        cfg_grp_config.attrs["yaml"] = OmegaConf.to_yaml(cfg)
+
         # for key, value in vars(cfg).items():
         #     if value is None:
         #         continue
         #     cfg_group.attrs[key] = str(value)
         meta_group = h5.create_group("metadata")
-        for key, value in metadata.items():
-            meta_group.attrs[key] = value
+        meta_group.attrs["json"] = json.dumps(metadata)
+        # for key, value in metadata.items():
+        #     meta_group.attrs[key] = value
 
 
 #TODO: Load trajectories from hdf5 file and return dict with data with numpy arrays

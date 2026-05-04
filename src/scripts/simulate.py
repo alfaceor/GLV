@@ -91,15 +91,17 @@ def main(cfg: Config) -> None:
         if cfg.noise.type == "NoneNoise":
             filename = output_dir / f"{cfg.run_name}_n_{cfg.n_species}_traj.h5"
         else:
-            filename = output_dir / f"{cfg.run_name}_n_{cfg.n_species}_traj_{cfg.noise._target_}.h5"
+            filename = output_dir / f"{cfg.run_name}_n_{cfg.n_species}_traj_{cfg.noise.type}.h5"
         metadata = {
             "device": str(device),
             "timestamp": timestamp,
-            "system_mode": cfg.system_mode,
-            "noise": cfg.noise
+            "system_mode": str(cfg.system_mode),
+            "noise": str(cfg.noise)
         }
         sigma_val = sigma.cpu().numpy() if sigma is not None else None
-        
+        print(cfg)
+        print(type(cfg))
+
         save_traj_to_hdf5(
             filename,
             traj=traj.cpu().numpy(),

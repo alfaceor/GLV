@@ -42,21 +42,23 @@ cd GLV
 
 ### 2. Set up Python environment
 
-Option A (pip):
-
-```bash
-pip install -e .
-```
-
-Option B (conda):
+Create a conda environment (optional):
 
 ```bash
 conda env create -f environment.yml
 conda activate glv
 ```
 
+Install package with pip
+
+```bash
+pip install -e .
+```
+
+
 ### 3. Build C++ solver (optional but recommended)
 
+<!-- FIXME: TDB if C++ implementation will be in this repo or not  -->
 
 ```bash
 cd cpp
@@ -69,31 +71,16 @@ make
 
 ## Quick Start
 
+Run a simulation
+
+```{bash}
+glv-simulate outputdir=. run_name=expname
+```
+
+<!-- TODO: Future implementation of pipeline, to make reproducible using 'make' -->
+
 Run the full pipeline:
 
-```bash
-make all
-```
-
-Or step by step:
-
-### 1. Run simulations
-
-```bash
-make simulate
-```
-
-### 2. Run analysis
-
-```bash
-make analyze
-```
-
-### 3. Build report
-
-```bash
-make paper
-```
 
 
 ## Reproducibility
