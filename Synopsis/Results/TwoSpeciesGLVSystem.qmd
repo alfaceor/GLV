@@ -1,0 +1,66 @@
+## Two species system
+
+A two species GLV system is evaluated as a ground test of evaluation
+
+
+```{python}
+from theomodels.io import load_traj_from_hdf5
+from theomodels.paths import DATA
+
+```
+
+
+```{python}
+DATA_SIMUL = DATA / "simul"
+list( DATA_SIMUL.iterdir() )
+```
+
+
+```{python}
+DATA_SIMUL_0 = DATA_SIMUL / "glv_0_0p1_n_2_traj_SingleNoise.h5"
+DATA_SIMUL_1 = DATA_SIMUL / "glv_1_0p1_n_2_traj_SingleNoise.h5"
+print(DATA_SIMUL_0, DATA_SIMUL_0.exists())
+print(DATA_SIMUL_1, DATA_SIMUL_1.exists())
+```
+
+
+
+```{python}
+data_0 = load_traj_from_hdf5(DATA_SIMUL_0)
+data_1 = load_traj_from_hdf5(DATA_SIMUL_1)
+```
+
+```{python}
+data_0.keys()
+```
+
+
+```{python}
+from theomodels.plotting import plot_matrix_A
+import matplotlib.pyplot as plt
+
+fig, ax = plt.subplots()
+plot_matrix_A(data_0["system"]["A"], ax)
+```
+
+It is quite interesting that the noise is not affecting the time evolution of the interacting species. Looks like is unaffected by the fluctuations of the other species.
+What are the possible reasons for this that came to my mind?
+ 1. There is an error in the dynamics integration
+ 1. The deterministic dynamics is practically not affected by the other species, maybe a weak coupling? if that is the case I need to check what is the order of magnitude affected by this noise intensity.
+ 1. Maybe if I start in the stable position $X_0^{*}$ instead of a random $X_0$ to avoid a large transient?
+
+
+```{python}
+from theomodels.plotting import plot_traj
+fig, ax = plt.subplots()
+ax.plot(data_0["traj"][0] )
+# ax.plot(data_1["traj"][0] )
+data_0["traj"]
+```
+
+
+```{python}
+from theomodels.plotting import plot_traj
+fig, ax = plt.subplots()
+ax.plot(data_1["traj"][0] )
+```
