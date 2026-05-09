@@ -268,7 +268,7 @@ class TestSaveTrajHDF5:
     def test_save_traj_to_hdf5_with_sigma_tensor(self, tmp_path):
         # --- Arrange ---
         filename = tmp_path / "test_output.h5"
-        traj = np.random.normal(10, 3)
+        traj = np.random.normal(size=(10, 3))
         tt = np.linspace(0, 1, 10)
         A = np.eye(3)
         r = np.zeros(3)
@@ -292,8 +292,56 @@ class TestSaveTrajHDF5:
 
         # --- Assert ---
         assert filename.exists()
-        
+
+
+
+class TestLoadTrajHDF5:
+    def test_load_traj_raises_FileNotFounderror(self):
+        with pytest.raises(FileNotFoundError):
+            load_traj_from_hdf5("noexiste.h5")
     
+    # TODO: Generate a test for KeyError
+    # def test_load_traj_raises_keyError(self, tmp_path):
+    #     with pytest.raises(KeyError):
+    #         load_traj_from_hdf5(tmp_path)
+
+    def test_load_traj(self, sample_system, tmp_path):
+        # --- Arrange ---
+        filename = tmp_path / "test_output_02.h5"
+        n_trials = 10
+        n_tsteps = 20
+        n_species = 4
+        traj = np.random.normal(size=(n_trials, n_tsteps, n_species))
+        tt = np.linspace(0, 1, n_tsteps)
+        A = np.eye(n_species)
+        r = np.ones(n_species)
+        X0 = np.ones(n_species)
+        sigma = np.random.normal(size=(n_tsteps,))
+        metadata = {"experiment": "test"}
+        cfg = {"version": 1.0}
+
+        # --- Act ---
+        save_traj_to_hdf5(
+            filepath=filename,
+            traj=traj,
+            time=tt,
+            A=A,
+            r=r,
+            X0=X0,
+            sigma=sigma,
+            metadata=metadata,
+            cfg=cfg
+        )
+
+        assert filename.exists()
+        data = load_traj_from_hdf5(filepath=filename)
+        assert isinstance(data, dict)
+        assert data["traj"].shape == (n_trials, n_tsteps, n_species)
+        np.testing.assert_allclose(A, data["system"]["A"], rtol=1e-5)
+        np.testing.assert_allclose(r, data["system"]["r"], rtol=1e-5)
+        np.testing.assert_allclose(X0, data["system"]["X0"], rtol=1e-5)
+        np.testing.assert_allclose(traj, data["traj"], rtol=1e-5)
+        np.testing.assert_allclose(tt, data["time"], rtol=1e-5)
 
 # ── resolve_device ────────────────────────────────────────────────────────────
 

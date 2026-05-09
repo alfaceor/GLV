@@ -209,17 +209,15 @@ def save_traj_to_hdf5(
 
     save_system_to_hdf5(filepath, A, r, X0)
 
-    with h5py.File(filepath, "w") as h5:
-        h5.create_dataset(_HDF5_KEY_TRAJ, data=traj)
-        h5.create_dataset(_HDF5_KEY_TIME, data=time)
-        # h5.create_dataset(_HDF5_KEY_A, data=A)
-        # h5.create_dataset(_HDF5_KEY_R, data=r)
-        # h5.create_dataset(_HDF5_KEY_X0, data=X0)
+    with h5py.File(filepath, "a") as h5:
+        ds_traj = h5.create_dataset(_HDF5_KEY_TRAJ, data=traj)
+        ds_time = h5.create_dataset(_HDF5_KEY_TIME, data=time)
         if sigma is not None:
             h5.create_dataset(_HDF5_KEY_SIGMA, data=sigma)
-        
         # FIXME: The problem is with the vars, I don't know exactly why
         # cfg_group = h5.create_group("config")
+        dims = ("trial", "time", "species")
+        ds_traj.attrs["_ARRAY_DIMENSIONS"] = dims
         cfg_grp_config = h5.create_group("config")
         cfg_grp_config.attrs["yaml"] = OmegaConf.to_yaml(cfg)
 
@@ -238,7 +236,24 @@ def load_traj_from_hdf5(filepath: Union[Path, str]):
     if isinstance(filepath, str):
         filepath = Path(filepath)
 
-    raise NotImplementedError
+    if not filepath.exists():
+        raise FileNotFoundError(f"HDF5 file not found: {filepath}")
+
+    with h5py.File(filepath, "r") as h5:
+        print(filepath)
+        system = {
+            "A": h5[_HDF5_KEY_A][:],
+            "r": h5[_HDF5_KEY_R][:],
+            "X0": h5[_HDF5_KEY_X0][:]
+        }
+        traj = h5[_HDF5_KEY_TRAJ][:]
+        time = h5[_HDF5_KEY_TIME][:]
+        data = {
+            "traj" : traj,
+            "time" : time,
+            "system": system
+        }
+    return data
 
 def explore(name, obj):
     """Print hdf5 Dataset attributes, shape and dtype

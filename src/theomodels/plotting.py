@@ -1,6 +1,21 @@
 import torch
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
+from typing import Union
+
+
+def plot_traj(
+        traj: np.ndarray,
+        time: np.ndarray,
+        ax: plt.Axes
+)->None:
+    # TODO: DEFINE A PLOT BASED ON COLOR OR SHAPE CONVENTIONS defined in a structure of h5 file
+    # TBD: So maybe defined by the species id, color, label name
+    ax.plot(time, traj)
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Abundance")
+    ax.set_title("Generalized Lotka-Volterra Simulation")
 
 
 def plot_trajectories(
@@ -17,9 +32,10 @@ def plot_trajectories(
     ax.set_title("Generalized Lotka-Volterra Simulation")
 
 
-def plot_matrix_A(A: torch.Tensor, ax: plt.Axes) -> None:
+def plot_matrix_A(A_np: Union[np.ndarray, torch.tensor], ax: plt.Axes) -> None:
     """Plot the interaction matrix."""
-    A_np = A.cpu().numpy()
+    if isinstance(A_np, torch.Tensor):
+        A_np = A_np.cpu().numpy()
     n_i, n_j = A_np.shape
     im = ax.imshow(A_np, cmap="coolwarm", interpolation="none")
     ax.set_title("Interaction matrix A")
