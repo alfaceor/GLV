@@ -84,6 +84,31 @@ def random_gaussian_system(
     X0 = torch.rand(n_species, device=device, dtype=dtype)
     return A, r, X0
 
+# TODO: create a function that generates a random A and r. Based on a defined x_star that will be a stationary state
+def random_feasible_system_x_star(
+    x_star: torch.Tensor,
+    device: torch.device | None = None,
+    dtype: torch.dtype = torch.float32
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Generate a random species interaction and growth rate based on the stationary state x_star 
+
+    Args:
+        x_star (torch.Tensor): Unidimensional tensor final stationary state for system.
+        device (torch.device | None, optional): _description_. Defaults to None.
+        dtype (torch.dtype, optional): _description_. Defaults to torch.float32.
+
+    Returns:
+        tuple[torch.Tensor, torch.Tensor]: Interaction matrix, growth rate for each species.
+    """
+    n_species = x_star.shape[0]
+    device = device or torch.device("cpu")
+
+    B = torch.randn(n_species, n_species, device=device, dtype=dtype)
+    A = -(B @ B.T) - 0.1 * torch.eye(n_species, device=device, dtype=dtype)
+    r = -(A @ x_star)
+    return A, r
+
+
 
 def random_feasible_system(
     n_species: int,

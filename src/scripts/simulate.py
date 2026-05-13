@@ -14,6 +14,7 @@ import torch
 import matplotlib.pyplot as plt
 
 from theomodels.core import (
+    random_feasible_system_x_star,
     random_system,
     simulate
 )
@@ -40,11 +41,13 @@ def main(cfg: Config) -> None:
     print(f"Using device: {device}")
 
     # 1. Build system
-    A, r, X0 = random_system(
-        cfg.n_species,
-        device=device,
-        mode=cfg.system_mode,
-    )
+    X0 = torch.arange(cfg.n_species, device=device, dtype=torch.float32) + 1.0
+    A, r = random_feasible_system_x_star(X0, device=device)
+    # A, r, X0 = random_system(
+    #     cfg.n_species,
+    #     device=device,
+    #     mode=cfg.system_mode,
+    # )
     if cfg.save_results:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 

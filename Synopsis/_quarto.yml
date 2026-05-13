@@ -8,10 +8,13 @@ book:
   chapters:
     - index.qmd
     # - summary.qmd
-    - intro.qmd
+    - Introduction/intro.qmd
     - context.qmd
-    - methods.qmd
+    - Methods/methods.qmd
+    - Methods/Inference.qmd
+    - Methods/simulations.qmd
     - results.qmd
+    - Results/TwoSpeciesGLVSystem.qmd
     # - discussion.qmd
     - references.qmd
   appendices: 

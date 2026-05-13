@@ -17,8 +17,10 @@ list( DATA_SIMUL.iterdir() )
 
 
 ```{python}
+DATA_SIMUL_NONE = DATA_SIMUL / "glv_deter_n_2_traj.h5"
 DATA_SIMUL_0 = DATA_SIMUL / "glv_0_0p1_n_2_traj_SingleNoise.h5"
 DATA_SIMUL_1 = DATA_SIMUL / "glv_1_0p1_n_2_traj_SingleNoise.h5"
+DATA_SIMUL_ALL = DATA_SIMUL / "glv_all_0p1_n_2_traj_AllNoise.h5"
 print(DATA_SIMUL_0, DATA_SIMUL_0.exists())
 print(DATA_SIMUL_1, DATA_SIMUL_1.exists())
 ```
@@ -26,8 +28,10 @@ print(DATA_SIMUL_1, DATA_SIMUL_1.exists())
 
 
 ```{python}
+data_none = load_traj_from_hdf5(DATA_SIMUL_NONE)
 data_0 = load_traj_from_hdf5(DATA_SIMUL_0)
 data_1 = load_traj_from_hdf5(DATA_SIMUL_1)
+data_all = load_traj_from_hdf5(DATA_SIMUL_ALL)
 ```
 
 ```{python}
@@ -43,24 +47,85 @@ fig, ax = plt.subplots()
 plot_matrix_A(data_0["system"]["A"], ax)
 ```
 
+<!-- TODO: CHECKOUT SIMULATIONS RESULTS -->
 It is quite interesting that the noise is not affecting the time evolution of the interacting species. Looks like is unaffected by the fluctuations of the other species.
 What are the possible reasons for this that came to my mind?
  1. There is an error in the dynamics integration
  1. The deterministic dynamics is practically not affected by the other species, maybe a weak coupling? if that is the case I need to check what is the order of magnitude affected by this noise intensity.
  1. Maybe if I start in the stable position $X_0^{*}$ instead of a random $X_0$ to avoid a large transient?
 
+::: {.panel-tabset}
+
 
 ```{python}
-from theomodels.plotting import plot_traj
+y_lims = (0, 3)
+```
+
+
+### Deterministic
+
+```{python}
+fig, ax = plt.subplots()
+ax.plot(data_none["traj"][0] )
+ax.set(
+    ylim=y_lims
+)
+```
+
+### Species 0 with noise
+
+```{python}
 fig, ax = plt.subplots()
 ax.plot(data_0["traj"][0] )
-# ax.plot(data_1["traj"][0] )
-data_0["traj"]
+ax.set(
+    ylim=y_lims
+)
+
+```
+
+### Species 1 with noise
+
+```{python}
+fig, ax = plt.subplots()
+ax.plot(data_1["traj"][0] )
+ax.set(
+    ylim=y_lims
+)
+
+```
+
+### Species All with noise
+
+```{python}
+fig, ax = plt.subplots()
+ax.plot(data_all["traj"][0] )
+ax.set(
+    ylim=y_lims
+)
+
+```
+
+:::
+
+
+```{python}
+data_all["traj"][0][0].mean(), data_all["traj"][0][0].mean()
+data_all["traj"][0].shape
 ```
 
 
 ```{python}
-from theomodels.plotting import plot_traj
+data_0["traj"][0][:, 0].mean(), data_0["traj"][0][:, 0].var()
+data_0["traj"][0][:, 0].mean(), data_0["traj"][0][:, 0].var()
+
+```
+
+
+```{python}
 fig, ax = plt.subplots()
-ax.plot(data_1["traj"][0] )
+# ax.plot(data_none["traj"][0][:, 0], data_none["traj"][0][:, 1])
+ax.plot(data_0["traj"][0][:, 0], data_0["traj"][0][:, 1])
+ax.plot(data_1["traj"][0][:, 0], data_1["traj"][0][:, 1])
+ax.plot(data_all["traj"][0][:, 0], data_all["traj"][0][:, 1])
+
 ```
