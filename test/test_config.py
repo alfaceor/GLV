@@ -12,9 +12,15 @@ from theomodels.config import (
     NoneNoise,
     SingleNoise,
     AllNoise,
-    SelIdNoise
+    SelIdNoise,
+    EFNone,
+    EFSingle,
+    EFAll,
+    EFSelId
 )
 from theomodels.constants import *
+
+from theomodels.config import register_configs as _register_configs
 
 import json
 import h5py
@@ -29,13 +35,10 @@ def clear_hydra():
 
 
 @pytest.fixture
-def register_configs():
-    cs = ConfigStore.instance()
-    cs.store(name="base_config", node=Config)
-    cs.store(group="noise", name="none", node=NoneNoise)
-    cs.store(group="noise", name="single", node=SingleNoise)
-    cs.store(group="noise", name="all", node=AllNoise)
-    cs.store(group="noise", name="selid", node=SelIdNoise)
+def register_configs(clear_hydra):
+    _register_configs()
+    yield
+
 
 
 @pytest.fixture

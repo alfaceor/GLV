@@ -9,12 +9,12 @@ book:
     - index.qmd
     # - summary.qmd
     - Introduction/intro.qmd
-    - context.qmd
+    # - context.qmd
     - Methods/methods.qmd
-    - Methods/Inference.qmd
-    - Methods/simulations.qmd
-    - results.qmd
-    - Results/TwoSpeciesGLVSystem.qmd
+    # - Methods/inference.qmd
+    # - Methods/simulations.qmd
+    - Results/results.qmd
+    # - Results/TwoSpeciesGLVSystem.qmd
     # - discussion.qmd
     - references.qmd
   appendices: 

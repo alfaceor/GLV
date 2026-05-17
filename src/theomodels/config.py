@@ -3,6 +3,44 @@ from dataclasses import dataclass, field
 from typing import Any
 from hydra.core.config_store import ConfigStore
 
+from omegaconf import MISSING
+
+
+# TODO: Add clases to manage the external perturbation
+# Initiate with 2 cases:
+# - No external perturbation.
+# - Constant value perturbation during a fixed time.
+# - Add sin or cos perturbation or periodic in general.
+# Like the noise the perturbation should be over one species or multiple and with different amplitudes.
+@dataclass
+class ExtForceConfig:
+    pass
+
+@dataclass
+class EFNone(ExtForceConfig):
+    type: str = "EFNone"
+
+@dataclass
+class EFSingle(ExtForceConfig):
+    f0: float = 0.0
+    # psteps: int | None = None
+    psteps: int = 0
+    index : int = 0
+    type: str = "EFSingle"
+
+@dataclass
+class EFAll(ExtForceConfig):
+    f0: float = 0.0
+    # psteps: int | None = None # perturbation steps. None should be all time steps
+    psteps: int = 0
+    type: str = "EFAll"
+
+@dataclass
+class EFSelId(ExtForceConfig):
+    type: str = "EFSelId"
+    map_str: str = "0:0.0"
+    defval: float = 0.0 # default value
+
 
 @dataclass
 class NoiseConfig:
@@ -64,6 +102,7 @@ class Config:
     defaults: list[Any] = field(default_factory=lambda: [
         "_self_",
         {"noise": "none"},   # declares noise as a swappable group
+        {"extf": "none"}
     ])
     n_species: int = 4
     dt: float = 0.01
@@ -76,8 +115,11 @@ class Config:
     save_results: bool = True
     output_dir: str = "data/simul"
     run_name: str = "glv_sim"
-    noise: NoiseConfig = field(default_factory=NoiseConfig)
+    noise: NoiseConfig = MISSING
+    extf: ExtForceConfig = MISSING
 
+    # noise: NoiseConfig = field(default_factory=NoiseConfig)
+    # extf: ExtForceConfig = field(default_factory=ExtForceConfig)
 
 
 def register_configs() -> None:
@@ -88,6 +130,10 @@ def register_configs() -> None:
     cs.store(group="noise", name="single", node=SingleNoise)
     cs.store(group="noise", name="all", node=AllNoise)
     cs.store(group="noise", name="selid", node=SelIdNoise)
+    cs.store(group="extf", name="none", node=EFNone)
+    cs.store(group="extf", name="single", node=EFSingle)
+    cs.store(group="extf", name="all", node=EFAll)
+    cs.store(group="extf", name="selid", node=EFSelId)
 
 
 def register_configs_buildsystem() -> None:

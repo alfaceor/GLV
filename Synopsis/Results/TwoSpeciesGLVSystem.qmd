@@ -1,6 +1,26 @@
+
 ## Two species system
 
+In this section we study a generalized lotka-volterra system with only two species, to evaluate how the noise in one species affect the other.
+
+```{python}
+import matplotlib.pyplot as plt
+font = {'family': 'normal',
+        'weight': 'bold',
+        'size': 14}
+plt.rc('font', **font)
+plt.rc('text', usetex=True)
+```
+
+
+
 A two species GLV system is evaluated as a ground test of evaluation
+
+The plan is to create a system with 2 species:
+ - Add an external deterministic perturbation for each of the 2 species independently:
+    - Constant perturbation with a specific perturbation time $t_p$ and analyze the recovery to equilibrium
+    - Add sin or cos functions as a perturbation 
+- Add a stochastic perturbation and quantificate the effect on the other species.
 
 
 ```{python}
@@ -12,7 +32,7 @@ from theomodels.paths import DATA
 
 ```{python}
 DATA_SIMUL = DATA / "simul"
-list( DATA_SIMUL.iterdir() )
+# list( DATA_SIMUL.iterdir() )
 ```
 
 
@@ -21,22 +41,14 @@ DATA_SIMUL_NONE = DATA_SIMUL / "glv_deter_n_2_traj.h5"
 DATA_SIMUL_0 = DATA_SIMUL / "glv_0_0p1_n_2_traj_SingleNoise.h5"
 DATA_SIMUL_1 = DATA_SIMUL / "glv_1_0p1_n_2_traj_SingleNoise.h5"
 DATA_SIMUL_ALL = DATA_SIMUL / "glv_all_0p1_n_2_traj_AllNoise.h5"
-print(DATA_SIMUL_0, DATA_SIMUL_0.exists())
-print(DATA_SIMUL_1, DATA_SIMUL_1.exists())
-```
-
-
-
-```{python}
+# print(DATA_SIMUL_0, DATA_SIMUL_0.exists())
+# print(DATA_SIMUL_1, DATA_SIMUL_1.exists())
 data_none = load_traj_from_hdf5(DATA_SIMUL_NONE)
 data_0 = load_traj_from_hdf5(DATA_SIMUL_0)
 data_1 = load_traj_from_hdf5(DATA_SIMUL_1)
 data_all = load_traj_from_hdf5(DATA_SIMUL_ALL)
 ```
 
-```{python}
-data_0.keys()
-```
 
 
 ```{python}
@@ -59,6 +71,8 @@ What are the possible reasons for this that came to my mind?
 
 ```{python}
 y_lims = (0, 3)
+lbl_x = "time"
+lbl_y = r"$n_i$"
 ```
 
 
@@ -68,7 +82,9 @@ y_lims = (0, 3)
 fig, ax = plt.subplots()
 ax.plot(data_none["traj"][0] )
 ax.set(
-    ylim=y_lims
+    ylim=y_lims,
+    xlabel=lbl_x,
+    ylabel=lbl_y
 )
 ```
 
@@ -78,7 +94,9 @@ ax.set(
 fig, ax = plt.subplots()
 ax.plot(data_0["traj"][0] )
 ax.set(
-    ylim=y_lims
+    ylim=y_lims,
+    xlabel=lbl_x,
+    ylabel=lbl_y
 )
 
 ```
@@ -89,7 +107,9 @@ ax.set(
 fig, ax = plt.subplots()
 ax.plot(data_1["traj"][0] )
 ax.set(
-    ylim=y_lims
+    ylim=y_lims,
+    xlabel=lbl_x,
+    ylabel=lbl_y
 )
 
 ```
@@ -100,12 +120,17 @@ ax.set(
 fig, ax = plt.subplots()
 ax.plot(data_all["traj"][0] )
 ax.set(
-    ylim=y_lims
+    ylim=y_lims,
+    xlabel=lbl_x,
+    ylabel=lbl_y
 )
 
 ```
 
 :::
+
+
+## 
 
 
 ```{python}
@@ -122,10 +147,25 @@ data_0["traj"][0][:, 0].mean(), data_0["traj"][0][:, 0].var()
 
 
 ```{python}
+
+trial = 4
 fig, ax = plt.subplots()
 # ax.plot(data_none["traj"][0][:, 0], data_none["traj"][0][:, 1])
-ax.plot(data_0["traj"][0][:, 0], data_0["traj"][0][:, 1])
-ax.plot(data_1["traj"][0][:, 0], data_1["traj"][0][:, 1])
-ax.plot(data_all["traj"][0][:, 0], data_all["traj"][0][:, 1])
+ax.plot(data_0["traj"][trial][:, 0], data_0["traj"][trial][:, 1], 'o', alpha=0.25)
+ax.plot(data_1["traj"][trial][:, 0], data_1["traj"][trial][:, 1], 'o', alpha=0.25)
+ax.plot(data_all["traj"][trial][:, 0], data_all["traj"][trial][:, 1], 'o', alpha=0.25)
+
+lbl_x = "$n_0$"
+lbl_y = "$n_1$"
+ax.set(
+    xlabel=lbl_x,
+    ylabel=lbl_y
+)
+
+```
+
+
+
+```{python}
 
 ```
