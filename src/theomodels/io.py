@@ -240,7 +240,7 @@ def load_traj_from_hdf5(filepath: Union[Path, str]):
         raise FileNotFoundError(f"HDF5 file not found: {filepath}")
 
     with h5py.File(filepath, "r") as h5:
-        print(filepath)
+        # print(filepath)
         system = {
             "A": h5[_HDF5_KEY_A][:],
             "r": h5[_HDF5_KEY_R][:],

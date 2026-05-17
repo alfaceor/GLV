@@ -65,3 +65,93 @@ def test_random_feasiable_system_x_star():
     np.testing.assert_allclose(X1, X0.cpu().numpy(), rtol=1e-5)
     np.testing.assert_allclose(X10, X0.cpu().numpy(), rtol=1e-5)
 
+@pytest.fixture
+def n_species_2_sytem():
+    n_species = 2
+    X0 = torch.arange(n_species) + 1.0
+    # X0 = torch.tensor([0.5, 1.0, 1.5, 2.0])
+    device = "cpu"
+    A, r = random_feasible_system_x_star(X0, device)
+    return n_species, A, r, X0
+
+@pytest.fixture
+def n_species_no_GLV():
+    n_species = 2
+    X0 = torch.arange(n_species) + 1.0
+    device = "cpu"
+    A = torch.zeros(n_species, n_species)
+    r = torch.zeros(n_species)
+    return n_species, A, r, X0
+
+
+@pytest.fixture
+def integration_vars():
+    dt = 0.1
+    steps = 10
+    n_trials = 1
+    return dt, steps, n_trials
+
+@pytest.fixture
+def f_t_n_2_cond_01():
+    device = "cpu"
+    n_species = 2
+    steps = 10
+    dt = 0.1
+    times = dt*torch.arange(steps, device=device)
+    F = torch.zeros(steps, n_species)
+    F[:, 0] = 0.1 * torch.sin(times)
+    # F[:, 1] = 0.05 * torch.cos(2*times)
+    return F, times
+
+
+class TestExternalForce:
+
+    def test_simulate_external_force_f_t(self):
+        nn = 4
+        X0 = torch.arange(nn) + 1.0
+        # X0 = torch.tensor([0.5, 1.0, 1.5, 2.0])
+        device = "cpu"
+        AA, rr = random_feasible_system_x_star(X0, device)
+        assert rr.shape == X0.shape
+        assert AA.shape == (X0.shape[0], X0.shape[0])
+        dt = 1
+        steps = 10
+        sigma = None
+        n_trials = 1
+        times = dt*torch.arange(steps, device=device)
+        F = torch.zeros(steps, nn)
+        F[:, 0] = 0.1 * torch.sin(times)
+        F[:, 1] = 0.05 * torch.cos(2 * times)
+        # f_t = torch.sin(0.1*time)
+        assert F.shape[0] == steps
+        traj = simulate(AA, rr, X0, dt, steps, sigma, n_trials, F)
+        assert traj.shape == (n_trials, steps+1, nn)
+
+    def test_f_t_wrong_shape(self, n_species_2_sytem, integration_vars, f_t_n_2_cond_01):
+        n_species, A, r, X0 = n_species_2_sytem
+        dt, steps, n_trials = integration_vars
+        F, times = f_t_n_2_cond_01
+        assert F.shape[0] == steps
+        assert F.shape[1] == n_species
+    
+    def test_just_f_t_no_GLV(self, n_species_no_GLV, integration_vars, f_t_n_2_cond_01):
+        n_species, A, r, X0 = n_species_no_GLV
+        dt, steps, n_trials = integration_vars
+        F, times = f_t_n_2_cond_01
+        sigma = None
+        traj = simulate(A, r, X0, dt, steps, sigma, n_trials, F)
+        np_traj = traj.cpu().numpy()
+        X1 = X0 + dt*F[0]
+        np_X0 = X0.cpu().numpy()
+        np_X1 = X1.cpu().numpy()
+        assert traj.shape == (n_trials, steps+1, n_species)
+        np.testing.assert_allclose(np_X0, np_traj[0, 0], rtol=1e-5)
+        np.testing.assert_allclose(np_X1, np_traj[0, 1], rtol=1e-5)
+    
+    def test_f_t_raise_ValueError(self, n_species_no_GLV, integration_vars):
+        n_species, A, r, X0 = n_species_no_GLV
+        dt, steps, n_trials = integration_vars
+        F = torch.zeros(7, 5)
+        sigma=None
+        with pytest.raises(ValueError):
+            traj = simulate(A, r, X0, dt, steps, sigma, n_trials, F)

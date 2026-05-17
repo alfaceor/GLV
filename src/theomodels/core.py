@@ -21,12 +21,19 @@ def simulate(
     steps: int,
     sigma: torch.Tensor | float | None = None,
     n_trials: int = 1,
+    f_t: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Euler-Maruyama simulation of dX_i = X_i (r_i + sum_j A_ij X_j) with multiplicative noise."""
     if steps < 0:
         raise ValueError("steps must be non-negative")
     if dt <= 0:
         raise ValueError("dt must be positive")
+    if f_t is not None:
+        if f_t.shape[0] != steps or f_t.shape[1] != r.shape[0]:
+            raise ValueError(
+                f"Invalid external for f_t tensor shape: {f_t.shape}",
+                f"Expected tensor shape {(steps, r.shape[0])}"
+            )
 
     X = X0.clone()
     n_species = X.size(0)
@@ -48,6 +55,9 @@ def simulate(
     for trial in range(n_trials):
         for i in range(steps):
             drift = X * (r + A @ X)
+            if f_t is not None:
+                drift += f_t[i]
+
             if noise_strength is None:
                 X = X + dt * drift
             else:
