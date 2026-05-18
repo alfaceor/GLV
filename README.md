@@ -1,3 +1,4 @@
+![Build Status](https://github.com/alfaceor/GLV/actions/workflows/ci.yml/badge.svg)
 # GLV Project: Simulation and Inference of Generalized Lotka–Volterra Models
 
 ## Overview
