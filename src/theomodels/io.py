@@ -114,6 +114,45 @@ def build_sigma_noise(cfg: Config, device: torch.device) -> torch.Tensor:
         raise ValueError("Unknow noise configuration")
     return sigma
 
+def build_extft_all(cfg: Config, device: torch.device) -> torch.Tensor:
+    f_t = torch.zeros(cfg.steps, cfg.n_species, device=device)
+    f_t[0:cfg.extft.psteps, :] = cfg.extft.f0
+    return f_t
+
+def build_extft_single(cfg: Config, device: torch.device) -> torch.Tensor:
+    f_t = torch.zeros(cfg.steps, cfg.n_species, device=device)
+    f_t[cfg.extft.index] = cfg.extft.f0
+    return f_t
+
+def build_extft_selid(cfg: Config, device: torch.device) -> torch.Tensor:
+    f0 = torch.full((cfg.n_species, ), cfg.extft.defval, device=device)
+    extft_map = parse_noise_map(cfg.extft.map_str, cfg.n_species)
+    try:
+        for key, value in extft_map.items():
+            f0[key] = value
+    except Exception as e:
+        # print(e)
+        raise e
+    f_t = torch.zeros((cfg.steps, cfg.n_species), device=device)
+    # Broadcast f_0 values to all time steps of the perturbation
+    f_t[0:cfg.extft.psteps, :] = f0
+    return f_t
+
+
+def build_extft(cfg: Config, device:torch.device) -> torch.Tensor:
+    if cfg.extft.type == "EFAll":
+        f_t = build_extft_all(cfg, device)
+    elif cfg.extft.type == "EFSingle":
+        f_t = build_extft_single(cfg, device)
+    elif cfg.extft.type == "EFSelId":
+        f_t = build_extft_selid(cfg, device)
+    elif cfg.extft.type == "EFNone":
+        f_t = None
+    else:
+        raise ValueError("Unknow noise configuration")
+    return f_t
+
+
 
 def save_system_to_hdf5(
     filepath: Union[Path, str],

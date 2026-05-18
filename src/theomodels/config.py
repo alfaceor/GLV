@@ -24,7 +24,7 @@ class EFNone(ExtForceConfig):
 class EFSingle(ExtForceConfig):
     f0: float = 0.0
     # psteps: int | None = None
-    psteps: int = 0
+    psteps: int = 1
     index : int = 0
     type: str = "EFSingle"
 
@@ -32,14 +32,15 @@ class EFSingle(ExtForceConfig):
 class EFAll(ExtForceConfig):
     f0: float = 0.0
     # psteps: int | None = None # perturbation steps. None should be all time steps
-    psteps: int = 0
+    psteps: int = 1
     type: str = "EFAll"
 
 @dataclass
 class EFSelId(ExtForceConfig):
-    type: str = "EFSelId"
     map_str: str = "0:0.0"
     defval: float = 0.0 # default value
+    psteps: int = 1
+    type: str = "EFSelId"
 
 
 @dataclass
@@ -102,7 +103,7 @@ class Config:
     defaults: list[Any] = field(default_factory=lambda: [
         "_self_",
         {"noise": "none"},   # declares noise as a swappable group
-        {"extf": "none"}
+        {"extft": "none"}
     ])
     n_species: int = 4
     dt: float = 0.01
@@ -115,11 +116,8 @@ class Config:
     save_results: bool = True
     output_dir: str = "data/simul"
     run_name: str = "glv_sim"
-    noise: NoiseConfig = MISSING
-    extf: ExtForceConfig = MISSING
-
-    # noise: NoiseConfig = field(default_factory=NoiseConfig)
-    # extf: ExtForceConfig = field(default_factory=ExtForceConfig)
+    noise: NoiseConfig = field(default_factory=NoiseConfig)
+    extft: ExtForceConfig = field(default_factory=ExtForceConfig)
 
 
 def register_configs() -> None:
@@ -130,10 +128,10 @@ def register_configs() -> None:
     cs.store(group="noise", name="single", node=SingleNoise)
     cs.store(group="noise", name="all", node=AllNoise)
     cs.store(group="noise", name="selid", node=SelIdNoise)
-    cs.store(group="extf", name="none", node=EFNone)
-    cs.store(group="extf", name="single", node=EFSingle)
-    cs.store(group="extf", name="all", node=EFAll)
-    cs.store(group="extf", name="selid", node=EFSelId)
+    cs.store(group="extft", name="none", node=EFNone)
+    cs.store(group="extft", name="single", node=EFSingle)
+    cs.store(group="extft", name="all", node=EFAll)
+    cs.store(group="extft", name="selid", node=EFSelId)
 
 
 def register_configs_buildsystem() -> None:

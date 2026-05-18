@@ -8,7 +8,11 @@ from theomodels.io import (
     save_system_to_hdf5,
     load_system_from_hdf5,
     save_traj_to_hdf5,
-    load_traj_from_hdf5
+    load_traj_from_hdf5,
+    build_extft_all,
+    build_extft_single,
+    build_extft_selid,
+    build_extft
 )
 from theomodels.config import (
     Config, 
@@ -16,7 +20,12 @@ from theomodels.config import (
     NoneNoise,
     SingleNoise,
     AllNoise,
-    SelIdNoise
+    SelIdNoise,
+    ExtForceConfig,
+    EFNone,
+    EFSingle,
+    EFAll,
+    EFSelId
     )
 
 from theomodels.io import resolve_device
@@ -360,4 +369,103 @@ class TestResolveDevice:
         device = resolve_device("cuda")
         assert device == torch.device("cuda")
 
+
+###########################3
+
+
+@pytest.fixture
+def extft_all_default():
+    return EFAll()
+
+@pytest.fixture
+def cfg_extft_all_default(extft_all_default):
+    return Config(extft=extft_all_default)
+
+@pytest.fixture
+def cfg_extft_all_newvalue():
+    return Config(extft=EFAll(f0=1.0))
+
+@pytest.fixture
+def extft_single_default():
+    return EFSingle()
+
+@pytest.fixture
+def cfg_extft_single_default(extft_single_default):
+    return Config(extft=extft_single_default)
+
+@pytest.fixture
+def extft_selid_default():
+    return EFSelId()
+
+@pytest.fixture
+def cfg_extft_selid_default(extft_selid_default):
+    return Config(extft=extft_selid_default)
+
+class TestExtFT:
+    def test_build_extft_all(self, cfg_extft_all_default):
+        cfg = cfg_extft_all_default
+        assert isinstance(cfg, Config)
+        assert isinstance(cfg.extft, ExtForceConfig)
+        assert isinstance(cfg.extft, EFAll)
+        assert cfg.extft.type == "EFAll"
+        assert cfg.extft.f0 == 0.0
+        assert cfg.extft.psteps == 1
+        assert cfg.n_species == 4
+        assert cfg.steps == 50
+        device = "cpu"
+        f_t = build_extft_all(cfg, device=device)
+        assert isinstance(f_t, torch.Tensor)
+        assert f_t.shape == (cfg.steps, cfg.n_species)
+        assert f_t[0, 0] == cfg.extft.f0
+    
+    def test_build_extft_all_newvalue(self, cfg_extft_all_newvalue):
+        cfg = cfg_extft_all_newvalue
+        device = "cpu"
+        f_t = build_extft_all(cfg, device=device)
+        assert cfg.extft.f0 == 1.0
+        assert f_t.shape == (cfg.steps, cfg.n_species)
+        tmp_f0 = cfg.extft.f0*torch.ones(cfg.n_species, device=device)
+        # assert f_t[0, 0] == cfg.extft.f0
+        torch.testing.assert_close(f_t[0], tmp_f0)
+
+    def test_build_extft_single_default(self, cfg_extft_single_default):
+        cfg = cfg_extft_single_default
+        assert isinstance(cfg, Config)
+        assert isinstance(cfg.extft, ExtForceConfig)
+        assert isinstance(cfg.extft, EFSingle)
+        assert cfg.extft.type == "EFSingle"
+        assert cfg.extft.f0 == 0.0
+        assert cfg.extft.psteps == 1
+        assert cfg.n_species == 4
+        assert cfg.steps == 50
+        device = "cpu"
+        f_t = build_extft_single(cfg, device=device)
+        assert isinstance(f_t, torch.Tensor)
+        assert f_t.shape == (cfg.steps, cfg.n_species)
+        assert f_t[0, 0] == cfg.extft.f0
+
+    def test_build_extft_selid_default(self, cfg_extft_selid_default):
+        cfg = cfg_extft_selid_default
+        assert isinstance(cfg, Config)
+        assert isinstance(cfg.extft, ExtForceConfig)
+        assert isinstance(cfg.extft, EFSelId)
+        assert cfg.extft.type == "EFSelId"
+        assert cfg.extft.map_str == "0:0.0"
+        assert cfg.extft.psteps == 1
+        assert cfg.extft.defval == 0.0
+        device = "cpu"
+        f0 = torch.full((cfg.n_species, ), cfg.extft.defval, device=device)
+        fa = torch.full((cfg.n_species, ), 0.0, device=device)
+        f_t = torch.zeros((cfg.steps, cfg.n_species), device=device)
+        assert isinstance(f0, torch.Tensor)
+        extft_map = parse_noise_map(cfg.extft.map_str, cfg.n_species)
+        assert isinstance(extft_map, dict)
+        for key, value in extft_map.items():
+            f0[key] = value
+        # Broadcast f_0 values
+        f_t[0:cfg.extft.psteps, :] = f0
+        torch.testing.assert_close(f_t[0], f0)
+        torch.testing.assert_close(f_t[2], fa)
+        f_t2 = build_extft_selid(cfg, device=device)
+        torch.testing.assert_close(f_t, f_t2)
 

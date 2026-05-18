@@ -70,8 +70,14 @@ def main(cfg: Config) -> None:
         r.cpu().numpy(),
         X0.cpu().numpy(),
         )
+    
+    # 2. External force 
+    if cfg.extf.type == "EFNone":
+        f_t = None
+    else:
+        f_t = build_extft(cfg, device=device)
 
-    # 2. simulate data
+    # 3. simulate data
     if cfg.noise.type == "NoneNoise":
         sigma = None
         traj = simulate(A, r, X0, cfg.dt, cfg.steps)
@@ -87,6 +93,8 @@ def main(cfg: Config) -> None:
             n_trials=cfg.n_trials,
         )
     tt = torch.arange(cfg.steps) * cfg.dt
+
+    
 
     if cfg.save_results:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
