@@ -8,7 +8,6 @@ from pathlib import Path
 from datetime import datetime
 
 import torch
-import matplotlib.pyplot as plt
 import h5py
 
 import numpy as np
