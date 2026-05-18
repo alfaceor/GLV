@@ -28,7 +28,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pytest
-          pip install pytorch
           pip install -e .
 
       - name: Run test with pytest
