@@ -1,5 +1,12 @@
 # Preface {.unnumbered}
 
-This is a Quarto book.
+## What to write in a Preface
 
-To learn more about Quarto books visit <https://quarto.org/docs/books>.
+1. Who are you? (Your background or personal connection to the theme).
+
+1. Why does this book exist? (The problem you wanted to solve or the story you felt compelled to tell).
+
+1. How did you do it? (A glimpse into your research process or the journey of writing).
+
+1. Who is this for? (A quick nod to the intended audience).
+

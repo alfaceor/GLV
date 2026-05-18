@@ -43,12 +43,12 @@ The pipeline covers two ecological models, three experimental configurations eac
 
 | Stage | Script | Language | Owner |
 |---|---|---|---|
-| Simulation | `simulate.py` | Python | Person A |
-| Data preparation | `prepare_data.py` | Python | Person A |
-| Inference — NLME | `inference/nlme_fit.R` | R | Person B |
-| Inference — Neural ODE | `inference/neural_ode_train.py` | Python | Person C |
-| Evaluation | `evaluate.py` | Python | Person A |
-| Report | `report/` | Quarto (Python + R) | Person D |
+| Simulation | `simulate.py` | Python | Carlos |
+| Data preparation | `prepare_data.py` | Python | Carlos |
+| Inference — NLME | `inference/nlme_fit.R` | R | Carlos |
+| Inference — Neural ODE | `inference/neural_ode_train.py` | Python | Carlos |
+| Evaluation | `evaluate.py` | Python | Carlos |
+| Report | `report/` | Quarto (Python + R) | Carlos |
 
 ---
 
@@ -130,7 +130,7 @@ The full directory layout expected at the end of the project is:
 project/
 ├── configs/
 │   ├── config.yaml
-│   ├── model/
+│   ├── theomodels/
 │   │   ├── glv.yaml
 │   │   └── macarthur.yaml
 │   ├── experiment/
@@ -152,7 +152,7 @@ project/
 │       ├── nlme.yaml
 │       └── neural_ode.yaml
 │
-├── models/
+├── theomodels/
 │   ├── __init__.py
 │   ├── glv.py
 │   └── macarthur.py
@@ -464,7 +464,7 @@ inference-ready dataset:
 
 **Owner: Person A**
 
-## Step 2.1 — Write `physics/glv.py`
+## Step 2.1 — Write `theomodels/glv.py`
 
 This module must contain a single function that implements the GLV ODE
 right-hand side. It receives the current state vector $\mathbf{x}$, the
@@ -476,7 +476,7 @@ $\mathbf{A}$ are zero, so the ODE reduces to $n$ independent logistic
 equations. The module should not special-case this — the general formula
 handles it automatically when $A_{ij} = 0$ for $i \neq j$.
 
-## Step 2.2 — Write `physics/macarthur.py`
+## Step 2.2 — Write `theomodels/macarthur.py`
 
 This module must contain a single function that implements the MacArthur
 coupled ODE right-hand side. It receives the concatenated state vector
@@ -494,7 +494,7 @@ This is the Hydra entry point for all simulations. It must:
 
 1. Be decorated with `@hydra.main` pointing to `configs/` with
    `config_name="config"`
-2. Read `cfg.model.name` and dispatch to the correct physics module using a
+2. Read `cfg.model.name` and dispatch to the correct models module using a
    registry dictionary — do not use `if/elif` chains
 3. Build the interaction matrix or consumption matrix from the experiment
    config. For `with_interactions` experiments, use `cfg.experiment.seed` to

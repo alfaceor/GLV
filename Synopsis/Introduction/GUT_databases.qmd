@@ -1,0 +1,15 @@
+
+# What is the distribution of the gut microbiome
+
+A human gut microbial gene catalogue established by metagenomic sequencing
+
+@gut2010HumanGutCatalogueNature
+
+## Q&A:
+
+What are KEGG pathways?
+
+
+# Global branches and local states of the human gut microbiome define associations owith environmental and intrinsic factors
+
+

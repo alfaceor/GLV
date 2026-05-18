@@ -7,4 +7,6 @@
 - Renormalization Group
 
 
+{{< include inference.qmd >}}
 
+{{< include simulations.qmd >}}

@@ -9,3 +9,10 @@
 - [ ] How can I make something similar to a Mori projection for the effect of the other species?
 - [ ] If I add a stochastic noise to each species ODE, should this be drawn from the same distribution? Some particles will feel a different thermal bath just for size differences so probably not the same spectral properties, rigth?
 - [ ] Modify perturbation function to get antiobitic concentrationss
+- [ ] Simulate using (trial, time, species), then transpose to (trial, species, time) for analysis, because transpose is cheap (no data copy until you require contiguous memory). Gives me the best of both worlds: convenient simulation, efficient analysis. So keep it mind to generate the simulations.
+- [ ] SQLite          ->  query which runs match your parameters
+- [ ] HDF5            ->  load the actual trajectory data
+- [ ] Xarray Dataset  ->  labeled, metadata-rich container
+- [ ] NumPy (inside)  ->  .values gives raw arrays
+- [ ] PyTorch / JAX   ->  from_numpy() / jnp.array() for training
+

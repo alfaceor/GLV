@@ -4,7 +4,7 @@
 
 * What are the common microbiome composition and distribution of the gut microbiome.
 * One-health compare distributions with gut, skin, mouth, environment.
-* Explore the connection between nutrition and the gut microbiome using computational and theoretical approaches.
+* Explore the connection between nutrition and the gut microbiome using computational and theoretical approaches. Link metabolic and taxonomic composition.
 * Make a review about the state of the art.
 * Develop and analyze mathematical and statistical models to capture microbial dynamics and nutrient interactions.
 * Use the project as a structured learning process in systems biology, statistical physics, and computational modeling.
@@ -18,7 +18,17 @@
 
 ## Core Requirements
 
-* **Programming Language:** Python (preferred for scientific computing, modeling, and simulations).
+* **Programming Language:  
+with h5py.File(fln_data, 'r') as f:
+    print(list(f.keys()))
+    f.visititems(explore)
+    # ds = xr.open_dataset(f, group="trajectories/deterministic")
+    
+    # for (path, dset) in h5py_dataset_iterator(f):
+    #     print(path, dset)
+
+# with xr.open_dataset(fln_data) as ds:
+#     print(ds)** Python (preferred for scientific computing, modeling, and simulations).
 * **Libraries/Tools:**
 
   * `numpy`, `JAX`, `pytorch`, `scipy` -> numerical methods, ODE solvers, symbolic checks

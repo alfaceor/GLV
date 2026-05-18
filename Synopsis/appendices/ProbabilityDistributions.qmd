@@ -6,6 +6,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import stats
+from scipy import special
 
 ###### BEGIN PLOT DECORATION VARIABLES 
 font = {'family': 'normal',
@@ -15,6 +16,28 @@ plt.rc('font', **font)
 plt.rc('text', usetex=True)
 ###### END PLOT DECORATION VARIABLES
 ```
+
+
+
+
+## Geometric distribution
+
+- Discrete memoryless property
+First success in $n$ trials of Bernoulli events with probability $p$
+$$
+geometric = p (1-p)^{n-1}
+$$ {#eq-geometric}
+<!-- ## Multiple dimensions of binomial -->
+
+the corresponding moment generation function (mgf) 
+
+$$
+M(t) = \frac{p}{e^{-t} - (1-p)}
+$$ {#eq-geometric-mgf}
+
+
+
+
 
 ## Binomial
 
@@ -72,6 +95,101 @@ fig.legend(
 
 ```
 
+
+## Hypergeometric distribution
+
+Also know as the urn problem
+$$
+P(X=x|N,M,K) =  \frac{\binom{M}{x} \binom{N-M}{K-x}}{\binom{N}{K}}
+$$
+
+
+
+
+
+```{python}
+
+# What is the probability that we get M=6 of N=25 are defective given
+# that we tested only K=10 and we found x=0 defectives ones.
+
+N = 25 # Number of machines delivered
+K = 10 # Number of samples tested
+M = 6 # Number of defective 
+x = np.arange(10) # Number of de
+
+
+def hypergeometric(x, N, M, K):
+    return special.comb(M, x)*special.comb(N-M, K-x)/special.comb(N, K)
+
+Ms = np.arange(N//4, N+1, 2)
+
+
+fig, ax = plt.subplots(figsize=(6, 3.5))
+
+for M in Ms:
+    l = f"{M}"
+    ax.plot(x, hypergeometric(x, N, K, M), label=l)
+# ax.plot(x, hypergeometric(x, N, K, M))
+
+ax.set(
+    xlabel="x",
+    ylabel=r"$P(X=x|N,M,K)$"
+)
+ax.legend(
+    title=r"$M$"
+)
+print(hypergeometric(0, N, M, K))
+
+```
+
+
+
+```{python}
+import numpy as np
+import matplotlib.pyplot as plt
+
+def generate_and_plot(p=0.5, N=10):
+    # 1. Generate the random list (Bernoulli trials)
+    # size=N creates the list, p is the probability of 1
+    samples = np.random.choice([0, 1], size=N, p=[1-p, p])
+    
+    # 2. Create the figure with two subplots
+    fig, (ax_img, ax_plt) = plt.subplots(2, 1, figsize=(8, 6), 
+                                         gridspec_kw={'height_ratios': [1, 2]})
+    
+    # --- Subplot 1: The "Coins" (Circles) ---
+    ax_img.set_xlim(-0.5, N - 0.5)
+    ax_img.set_ylim(-0.5, 0.5)
+    ax_img.axis('off')  # Hide axes for a cleaner look
+    
+    for i, val in enumerate(samples):
+        color = 'red' if val == 1 else 'blue'
+        circle = plt.Circle((i, 0), 0.3, color=color, ec='black', lw=1.5)
+        ax_img.add_patch(circle)
+        # Optional: Add text label
+        ax_img.text(i, 0, str(val), color='white', ha='center', va='center', fontweight='bold')
+    
+    ax_img.set_title(f"Random Samples (p={p})", loc='left', fontsize=12)
+
+    # --- Subplot 2: The Histogram ---
+    # We use bins=[-0.5, 0.5, 1.5] to center the bars over 0 and 1
+    ax_plt.hist(samples, bins=[-0.5, 0.5, 1.5], rwidth=0.8, 
+                color='gray', edgecolor='black', alpha=0.7)
+    
+    ax_plt.set_xticks([0, 1])
+    ax_plt.set_xticklabels(['0 (Blue)', '1 (Red)'])
+    ax_plt.set_ylabel("Frequency")
+    ax_plt.set_title("Count of 0s vs 1s")
+    ax_plt.grid(axis='y', linestyle='--', alpha=0.5)
+
+    plt.tight_layout()
+    plt.show()
+
+# Run it once to test
+generate_and_plot(p=0.3, N=10)
+```
+
+
 ## Normal distribution
 
 For the limit of $n \to \infty$ we get
@@ -111,23 +229,6 @@ p(x, \lambda) = \frac{\lambda^{x}}{x!} e^{-\lambda}
 $$ {#eq-poisson-pdf}
 
 The @eq-poisson-pdf give us the probability of a rare event, with $p$ occurs $x$ times, where $\lambda$ is the mean value of $x$ 
-
-
-## Geometric distribution
-
-- Discrete memoryless property
-First success in $n$ trials of Bernoulli events with probability $p$
-$$
-geometric = p (1-p)^{n-1}
-$$ {#eq-geometric}
-<!-- ## Multiple dimensions of binomial -->
-
-the corresponding moment generation function (mgf) 
-
-$$
-M(t) = \frac{p}{e^{-t} - (1-p)}
-$$ {#eq-geometric-mgf}
-
 
 
 
@@ -199,5 +300,44 @@ P_{s}\left( \{ n. \} | N_{s} \right) =
 $$
 
 
+Regularization and the choice of the prior distribution $\rho\left( \left\{ p. \right\} \right)$ in the context of maximum likelihood estimation (MLE) and maximum a posteriori estimation (MAP) for parameter estimation in statistical models.
+
+Difference between the Gaussian, Laplace and Cauchy distributions.
 
 
+```{python}
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Define x range
+x = np.linspace(-8, 8, 1000)
+
+# Gaussian: mu=0, sigma=1
+gaussian = (1 / (np.sqrt(2 * np.pi))) * np.exp(-0.5 * (x**2))
+
+# Laplace: mu=0, b=1
+laplace = (1 / 2) * np.exp(-np.abs(x))
+
+# Cauchy: x0=0, gamma=1
+cauchy = 1 / (np.pi * (1 + x**2))
+
+# Plotting the Distributions
+plt.figure(figsize=(10, 5))
+plt.plot(x, gaussian, label='Gaussian (Ridge)', lw=2)
+plt.plot(x, laplace, label='Laplace (LASSO)', lw=2)
+plt.plot(x, cauchy, label='Cauchy (Heavy Tails)', lw=2, linestyle='--')
+plt.title("Distribution Comparison: Peak and Tails")
+plt.legend()
+plt.grid(True, alpha=0.3)
+plt.savefig('distribution_comparison.png')
+
+# Plotting the "Zoomed" Peak
+plt.figure(figsize=(10, 5))
+x_zoom = np.linspace(-1, 1, 500)
+plt.plot(x_zoom, (1 / (np.sqrt(2 * np.pi))) * np.exp(-0.5 * (x_zoom**2)), label='Gaussian (Smooth)')
+plt.plot(x_zoom, (1 / 2) * np.exp(-np.abs(x_zoom)), label='Laplace (Pointy/Sharp)')
+plt.title("Zoomed View: The Laplace 'Cusp' at Zero")
+plt.legend()
+plt.grid(True, alpha=0.3)
+plt.savefig('peak_comparison_zoom.png')
+```
