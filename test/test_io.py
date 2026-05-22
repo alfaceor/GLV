@@ -383,7 +383,7 @@ def cfg_extft_all_default(extft_all_default):
 
 @pytest.fixture
 def cfg_extft_all_newvalue():
-    return Config(extft=EFAll(f0=1.0))
+    return Config(extft=EFAll(f0=2.0))
 
 @pytest.fixture
 def extft_single_default():
@@ -408,7 +408,7 @@ class TestExtFT:
         assert isinstance(cfg.extft, ExtForceConfig)
         assert isinstance(cfg.extft, EFAll)
         assert cfg.extft.type == "EFAll"
-        assert cfg.extft.f0 == 0.0
+        assert cfg.extft.f0 == 1.0
         assert cfg.extft.psteps == 1
         assert cfg.n_species == 4
         assert cfg.steps == 50
@@ -422,7 +422,7 @@ class TestExtFT:
         cfg = cfg_extft_all_newvalue
         device = "cpu"
         f_t = build_extft_all(cfg, device=device)
-        assert cfg.extft.f0 == 1.0
+        assert cfg.extft.f0 == 2.0
         assert f_t.shape == (cfg.steps, cfg.n_species)
         tmp_f0 = cfg.extft.f0*torch.ones(cfg.n_species, device=device)
         # assert f_t[0, 0] == cfg.extft.f0
@@ -434,7 +434,7 @@ class TestExtFT:
         assert isinstance(cfg.extft, ExtForceConfig)
         assert isinstance(cfg.extft, EFSingle)
         assert cfg.extft.type == "EFSingle"
-        assert cfg.extft.f0 == 0.0
+        assert cfg.extft.f0 == 1.0
         assert cfg.extft.psteps == 1
         assert cfg.n_species == 4
         assert cfg.steps == 50

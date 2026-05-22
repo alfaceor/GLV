@@ -77,10 +77,10 @@ def n_species_2_sytem():
 @pytest.fixture
 def n_species_no_GLV():
     n_species = 2
-    X0 = torch.arange(n_species) + 1.0
     device = "cpu"
-    A = torch.zeros(n_species, n_species)
-    r = torch.zeros(n_species)
+    X0 = torch.arange(n_species, device=device) + 1.0
+    A = torch.zeros(n_species, n_species, device=device)
+    r = torch.zeros(n_species, device=device)
     return n_species, A, r, X0
 
 
@@ -100,6 +100,23 @@ def f_t_n_2_cond_01():
     times = dt*torch.arange(steps, device=device)
     F = torch.zeros(steps, n_species)
     F[:, 0] = 0.1 * torch.sin(times)
+    # F[:, 1] = 0.05 * torch.cos(2*times)
+    return F, times
+
+@pytest.fixture
+def f_t_n_2_cond_02():
+    # species 0 with constant perturbation for psteps
+    device = "cpu"
+    n_species = 2
+    steps = 10
+    psteps = 5
+    dt = 0.1
+    times = dt*torch.arange(steps, device=device)
+    i_species = 0
+    F = torch.zeros((steps, n_species), device=device)
+    # f0 = torch.ones(psteps, device=device)
+    f0 = 2.0
+    F[0:psteps, i_species] = f0
     # F[:, 1] = 0.05 * torch.cos(2*times)
     return F, times
 
@@ -155,3 +172,10 @@ class TestExternalForce:
         sigma=None
         with pytest.raises(ValueError):
             traj = simulate(A, r, X0, dt, steps, sigma, n_trials, F)
+    
+    def test_f_t_simulate(self, n_species_no_GLV, integration_vars, f_t_n_2_cond_02):
+        n_species, A, r, X0 = n_species_no_GLV
+        dt, steps, n_trials = integration_vars
+        F, times = f_t_n_2_cond_02
+        assert F.shape == (steps, n_species)
+    

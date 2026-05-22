@@ -22,15 +22,15 @@ class EFNone(ExtForceConfig):
 
 @dataclass
 class EFSingle(ExtForceConfig):
-    f0: float = 0.0
+    f0: float = 1.0
     # psteps: int | None = None
     psteps: int = 1
-    index : int = 0
+    index: int = 0
     type: str = "EFSingle"
 
 @dataclass
 class EFAll(ExtForceConfig):
-    f0: float = 0.0
+    f0: float = 1.0
     # psteps: int | None = None # perturbation steps. None should be all time steps
     psteps: int = 1
     type: str = "EFAll"
@@ -103,7 +103,7 @@ class Config:
     defaults: list[Any] = field(default_factory=lambda: [
         "_self_",
         {"noise": "none"},   # declares noise as a swappable group
-        {"extft": "none"}
+        {"extft": "single"}
     ])
     n_species: int = 4
     dt: float = 0.01

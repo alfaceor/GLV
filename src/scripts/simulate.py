@@ -59,42 +59,38 @@ def main(cfg: Config) -> None:
     }
 
     output_dir = Path(cfg.output_dir)
-    fln_system = output_dir / f"{cfg.run_name}_n_{cfg.n_species}_system.h5"
-
-    # TODO: Resolve the accordance with the refactored function
-    # there should an option to use an already generated file
-    # the output should be a file that will be use for a 
-    save_system_to_hdf5(
-        fln_system,
-        A.cpu().numpy(),
-        r.cpu().numpy(),
-        X0.cpu().numpy(),
-        )
+    # fln_system = output_dir / f"{cfg.run_name}_n_{cfg.n_species}_system.h5"
+    # save_system_to_hdf5(
+    #     fln_system,
+    #     A.cpu().numpy(),
+    #     r.cpu().numpy(),
+    #     X0.cpu().numpy(),
+    #     )
     
     # 2. External force 
-    if cfg.extf.type == "EFNone":
+    if cfg.extft.type == "EFNone":
         f_t = None
     else:
         f_t = build_extft(cfg, device=device)
+        print(f_t)
 
     # 3. simulate data
     if cfg.noise.type == "NoneNoise":
         sigma = None
-        traj = simulate(A, r, X0, cfg.dt, cfg.steps)
+        # traj = simulate(A, r, X0, cfg.dt, cfg.steps)
     else:
         sigma = build_sigma_noise(cfg, device=device)
-        traj = simulate(
-            A,
-            r,
-            X0,
-            cfg.dt,
-            cfg.steps,
-            sigma=sigma,
-            n_trials=cfg.n_trials,
-        )
+    traj = simulate(
+        A,
+        r,
+        X0,
+        cfg.dt,
+        cfg.steps,
+        sigma=sigma,
+        n_trials=cfg.n_trials,
+        f_t=f_t
+    )
     tt = torch.arange(cfg.steps) * cfg.dt
-
-    
 
     if cfg.save_results:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

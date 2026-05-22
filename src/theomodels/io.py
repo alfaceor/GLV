@@ -121,7 +121,7 @@ def build_extft_all(cfg: Config, device: torch.device) -> torch.Tensor:
 
 def build_extft_single(cfg: Config, device: torch.device) -> torch.Tensor:
     f_t = torch.zeros(cfg.steps, cfg.n_species, device=device)
-    f_t[cfg.extft.index] = cfg.extft.f0
+    f_t[0:cfg.extft.psteps, cfg.extft.index] = cfg.extft.f0
     return f_t
 
 def build_extft_selid(cfg: Config, device: torch.device) -> torch.Tensor:
@@ -140,6 +140,18 @@ def build_extft_selid(cfg: Config, device: torch.device) -> torch.Tensor:
 
 
 def build_extft(cfg: Config, device:torch.device) -> torch.Tensor:
+    """Return the external force tensor with a constant value intensity for each species for a perturbation time psteps 
+
+    Args:
+        cfg (Config): _description_
+        device (torch.device): _description_
+
+    Raises:
+        ValueError: _description_
+
+    Returns:
+        torch.Tensor: external force tensor
+    """
     if cfg.extft.type == "EFAll":
         f_t = build_extft_all(cfg, device)
     elif cfg.extft.type == "EFSingle":
