@@ -19,7 +19,8 @@ from theomodels.constants import (
     _HDF5_KEY_X0,
     _HDF5_KEY_TRAJ,
     _HDF5_KEY_TIME,
-    _HDF5_KEY_SIGMA
+    _HDF5_KEY_SIGMA,
+    _HDF5_KEY_EXTFT
 )
 
 
@@ -228,6 +229,43 @@ def load_system_from_hdf5(
             "X0": h5[_HDF5_KEY_X0][:]
         }
     return data
+
+# todo: WRITE UNIT TEST FOR SAVE AND LOAD EXTFT
+def save_extft_to_hdf5(
+    filepath: Union[Path, str],
+    f_t: np.ndarray
+) -> None:
+    if isinstance(filepath, str):
+        filepath = Path(filepath)
+    filepath.parent.mkdir(parents=True, exist_ok=True)
+
+    if np.any(np.isnan(f_t)) or np.any(np.isinf(f_t)):
+        raise ValueError("External time dependent for f_t contains NaN or Inf values")
+
+    with h5py.File(filepath, "a") as h5:
+        dtattr = h5py.string_dtype(encoding="utf-8")
+        h5.create_dataset(_HDF5_KEY_EXTFT, data=A, dtype=np.float64, compression="gzip", compression_opts=4)
+    # raise NotImplementedError
+
+
+def load_extft_from_hdf5(filepath: Union[Path, str]):
+    if isinstance(filepath, str):
+        filepath = Path(filepath)
+
+    if not filepath.exists():
+        raise FileNotFoundError(f"HDF5 file not found: {filepath}")
+
+    with h5py.File(filepath, "r") as h5:
+        # print(filepath)
+        extft = {
+            "f_t" = h5[_HDF5_KEY_EXTFT]
+        }
+        data = {
+            "extft": extft
+        }
+    return data
+
+
 
 # TODO: Write the pytest for this function
 def save_traj_to_hdf5(

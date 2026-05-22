@@ -124,37 +124,5 @@ def main(cfg: Config) -> None:
 
 
 
-    # fig, ax = plt.subplots(3, 1, figsize=(10, 8))
-    # ax_traj, ax_matrix, ax_species_ij = ax
-
-    # for trial in range(cfg.n_trials):
-    #     ax_traj.plot(
-    #         tt.cpu().numpy(),
-    #         stoch_traj[trial, :, 3].cpu().numpy(),
-    #         color="gray",
-    #         alpha=0.5,
-    #         label=f"3, {trial}",
-    #     )
-    #     ax_species_ij.plot(
-    #         stoch_traj[trial, :, 3].cpu().numpy(),
-    #         stoch_traj[trial, :, 0].cpu().numpy(),
-    #         linestyle="none",
-    #         marker="o",
-    #     )
-
-    # ax_traj.plot(tt.cpu().numpy(), deter_traj[0, :, 3].cpu().numpy())
-    # ax_traj.plot(
-    #     deter_traj[0, :, 3].cpu().numpy(),
-    #     deter_traj[0, :, 0].cpu().numpy(),
-    # )
-
-    # plot_matrix_A(A, ax=ax_matrix)
-
-    # print("Final state (deterministic):", deter_traj[-1].cpu())
-    # print("Final state (stochastic):", stoch_traj[-1].cpu())
-
-    # plt.show()
-
-
 if __name__ == "__main__":
     main()

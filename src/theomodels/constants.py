@@ -8,6 +8,7 @@ _HDF5_KEY_X0  = "system/X0"
 _HDF5_KEY_TRAJ = "traj"
 _HDF5_KEY_TIME = "time"
 _HDF5_KEY_SIGMA = "noise/sigma"
+_HDF5_KEY_EXTFT = "extft/ft"
 
 
 # from dataclasses import dataclass
