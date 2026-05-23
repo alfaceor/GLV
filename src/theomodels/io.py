@@ -9,6 +9,7 @@ import numpy as np
 from typing import TypedDict
 from omegaconf import DictConfig, OmegaConf
 import json
+import yaml
 
 from theomodels.constants import (
     _HDF5_GRP_KEY_SYSTEM,
@@ -258,7 +259,7 @@ def load_extft_from_hdf5(filepath: Union[Path, str]):
     with h5py.File(filepath, "r") as h5:
         # print(filepath)
         extft = {
-            "f_t" = h5[_HDF5_KEY_EXTFT]
+            "f_t": h5[_HDF5_KEY_EXTFT]
         }
         data = {
             "extft": extft
@@ -337,10 +338,17 @@ def load_traj_from_hdf5(filepath: Union[Path, str]):
         }
         traj = h5[_HDF5_KEY_TRAJ][:]
         time = h5[_HDF5_KEY_TIME][:]
+        config_tmp = dict(h5["config"].attrs)
+        config = yaml.safe_load(config_tmp['yaml'])
+        # 3. Read Metadata Attributes
+        metadata = dict(h5["metadata"].attrs)
+
         data = {
-            "traj" : traj,
-            "time" : time,
-            "system": system
+            "traj": traj,
+            "time": time,
+            "system": system,
+            "config": config,
+            "metadata": metadata
         }
     return data
 

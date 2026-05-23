@@ -80,6 +80,7 @@ def main(cfg: Config) -> None:
         # traj = simulate(A, r, X0, cfg.dt, cfg.steps)
     else:
         sigma = build_sigma_noise(cfg, device=device)
+    print("Simulation started:", datetime.now().strftime("%Y%m%d_%H%M%S"))
     traj = simulate(
         A,
         r,
@@ -91,6 +92,7 @@ def main(cfg: Config) -> None:
         f_t=f_t
     )
     tt = torch.arange(cfg.steps) * cfg.dt
+    print("Simulation ended:", datetime.now().strftime("%Y%m%d_%H%M%S"))
 
     if cfg.save_results:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
