@@ -14,12 +14,14 @@ dependencies = [
     "h5py",
     "numpy",
     "scipy",
-    "matplotlib"
+    "matplotlib",
+    "mlflow"
     # torch installed separately — see README (CPU vs CUDA differs)
 ]
 
 [project.optional-dependencies]
 dev = [
+    "jupyter-cache",
     "pytest",
     "pytest-cov",
     "pytest-benchmark",
