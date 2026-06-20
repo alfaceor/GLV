@@ -7,9 +7,9 @@ def get_project_root():
             return parent
     raise RuntimeError("Project root not found")
 
-ROOT = get_project_root()
+PATH_ROOT = get_project_root()
 
-DATA = ROOT / "data"
+DATA = PATH_ROOT / "data"
 RAW = DATA / "raw"
 PROCESSED = DATA / "processed"
-OUTPUTS = ROOT / "outputs"
+OUTPUTS = PATH_ROOT / "outputs"

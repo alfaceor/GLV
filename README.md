@@ -157,7 +157,7 @@ quarto render Synopsis/
 * [x] Add stochastic simulations
 * [ ] Improve parameter inference methods
 * [ ] Integrate C++ solver with Python bindings
-* [ ] Add CI for automated testing
+* [x] Add CI for automated testing
 * [ ] Improve documentation and examples
 
 ## Contributing

@@ -17,6 +17,17 @@ from scipy.optimize import minimize
 from sklearn.preprocessing import StandardScaler
 
 
+def GLV_inference(X, y, params_ini):
+    # TODO: WHAT should be the input of this function?
+    # return the the inferred parameters right?
+    # So what are those infered parameters and how can I say like monolix infer this one and fix the other?
+    # maybe pass a dictionary or something like that no?
+    # FIXME: TDB
+    params_inferred = None
+    return params_inferred
+    # raise NotImplementedError
+
+
 
 # 1. Load data
 PATH_DATA_SIMUL = DATA / "simul"

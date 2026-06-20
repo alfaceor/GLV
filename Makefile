@@ -1,15 +1,13 @@
-# all:glv_deter glv_0_0p1 glv_1_0p1 glv_all_0p1 
-# all:glv_0_efs_1p0 glv_1_efs_1p0 glv_all_efs_1p0
-# all:glv_0_efs_1p0_ns_0_1p0 glv_1_efs_1p0_ns_1_1p0 
-all:glv_1_efs_1p0_nall_1p0 glv_0_efs_1p0_nall_1p0
+all:glv_deter glv_0_0p1 glv_1_0p1 glv_all_0p1 glv_0_efs_1p0 glv_1_efs_1p0 glv_all_efs_1p0 glv_0_efs_1p0_ns_0_1p0 glv_1_efs_1p0_ns_1_1p0 glv_1_efs_1p0_nall_1p0 glv_0_efs_1p0_nall_1p0
+
 NSPECIES=2
 STEPS=2000
 PSTEPS=20
 F0=-4.0
-STD=0.1
-NTRIALS=1000
+STD=0.01
+NTRIALS=5000
 
-# Deterministic with NSPECIES
+# Deterministic with NSPECIES without extft
 glv_deter:
 	glv-simulate run_name=glv_deter \
 	n_trials=1 \
@@ -17,7 +15,7 @@ glv_deter:
 	steps=$(STEPS) \
 	noise=none
 
-# Random noise in on index=0
+# Random noise in on index=0 without extft
 glv_0_0p1:
 	glv-simulate run_name=glv_0_0p1 \
 	n_trials=$(NTRIALS) \
@@ -25,7 +23,7 @@ glv_0_0p1:
 	steps=$(STEPS) \
 	noise=single noise.std=$(STD) noise.index=0
 
-# Random noise in on index=1
+# Random noise in on index=1 without extf
 glv_1_0p1:
 	glv-simulate run_name=glv_1_0p1 \
 	n_trials=$(NTRIALS) \
@@ -33,7 +31,7 @@ glv_1_0p1:
 	steps=$(STEPS) \
 	noise=single noise.std=$(STD) noise.index=1
 
-# Random noise in all NSPECIES
+# Random noise in all NSPECIES without extf
 glv_all_0p1:
 	glv-simulate run_name=glv_all_0p1 \
 	n_trials=$(NTRIALS) \

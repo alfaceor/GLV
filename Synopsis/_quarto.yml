@@ -1,5 +1,6 @@
 project:
   type: book
+  output-dir: ../public
 
 book:
   title: "Synopsis"
@@ -14,6 +15,7 @@ book:
     # - Methods/inference.qmd
     # - Methods/simulations.qmd
     - Results/results.qmd
+    - Results/GLV_regression.qmd
     # - Results/TwoSpeciesGLVSystem.qmd
     # - discussion.qmd
     - references.qmd
@@ -30,11 +32,13 @@ citeproc: true
 
 format:
   html:
+    code-fold: true
     theme:
       - cosmo
       - brand
     execute:
-      echo: false
+      # freeze: auto
+      # echo: false
       warning: false
   pdf:
     documentclass: scrreprt

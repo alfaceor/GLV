@@ -34,3 +34,28 @@ $$
 Symmetries and network structure
 
 
+## Numerical Simulations
+- Simulations:
+    - n_species = 2
+        - No noise and No external force
+        - Noise on species 0 and No external force
+        - Noise on species 1 and No external force
+        - Noise on species 0 and 1, and No external force
+        - No noise and External force on species 0
+        - No noise and External force on species 1
+        - No noise and External force on species 0 and 1
+        - Noise on species 0 and External force on species 0
+        - Noise on species 1 and External force on species 0
+        - Noise on species 0 and 1, and External force on species 0
+        - Noise on species 0 and External force on species 1
+        - Noise on species 1 and External force on species 1
+        - Noise on species 0 and 1, and External force on species 1
+        - Noise on species 0 and External force on species 0 and 1
+        - Noise on species 1 and External force on species 0 and 1
+        - Noise on species 0 and 1, and External force on species 0 and 1
+
+```{mermaid}
+
+```
+
+

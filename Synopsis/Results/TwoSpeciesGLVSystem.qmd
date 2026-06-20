@@ -1,17 +1,105 @@
 
 ## Two species system
 
-In this section we study a generalized lotka-volterra system with only two species, to evaluate how the noise in one species affect the other.
+In this section we study a generalized lotka-volterra system with only two species, to evaluate how the a external perturbation and/or noise in one species affect the system.
 
 ```{python}
+#| echo: false
 import matplotlib.pyplot as plt
 font = {'family': 'normal',
         'weight': 'bold',
         'size': 14}
 plt.rc('font', **font)
 plt.rc('text', usetex=True)
+
+
+import matplotlib as mpl
+mpl.colormaps
 ```
 
+
+```{mermaid}
+classDiagram
+    %% Core Configuration and Composition
+    class Config {
+        +list[Any] defaults
+        +int n_species
+        +float dt
+        +int steps
+        +int n_trials
+        +int|None seed
+        +str system_mode
+        +str device
+        +bool save_results
+        +str output_dir
+        +str run_name
+        +NoiseConfig noise
+        +ExtForceConfig extft
+    }
+
+    %% Composition Relationships (Config holds these types)
+    Config *-- NoiseConfig : composition (noise)
+    Config *-- ExtForceConfig : composition (extft)
+
+    %% Noise Configurations Hierarchy
+    class NoiseConfig {
+        <<dataclass>>
+    }
+    class NoneNoise {
+        +str type = "NoneNoise"
+    }
+    class SingleNoise {
+        +float std = 0.1
+        +int index = 0
+        +str type = "SingleNoise"
+    }
+    class AllNoise {
+        +float std = 0.1
+        +str type = "AllNoise"
+    }
+    class SelIdNoise {
+        +str noise_map_str = "0:0.0"
+        +float default_std = 0.0
+        +str type = "SelIdNoise"
+    }
+
+    %% Inheritance for Noise
+    NoiseConfig <|-- NoneNoise : inheritance
+    NoiseConfig <|-- SingleNoise : inheritance
+    NoiseConfig <|-- AllNoise : inheritance
+    NoiseConfig <|-- SelIdNoise : inheritance
+
+    %% External Force Configurations Hierarchy
+    class ExtForceConfig {
+        <<dataclass>>
+    }
+    class EFNone {
+        +str type = "EFNone"
+    }
+    class EFSingle {
+        +float f0 = 1.0
+        +int psteps = 1
+        +int index = 0
+        +str type = "EFSingle"
+    }
+    class EFAll {
+        +float f0 = 1.0
+        +int psteps = 1
+        +str type = "EFAll"
+    }
+    class EFSelId {
+        +str map_str = "0:0.0"
+        +float defval = 0.0
+        +int psteps = 1
+        +str type = "EFSelId"
+    }
+
+    %% Inheritance for External Force
+    ExtForceConfig <|-- EFNone : inheritance
+    ExtForceConfig <|-- EFSingle : inheritance
+    ExtForceConfig <|-- EFAll : inheritance
+    ExtForceConfig <|-- EFSelId : inheritance 
+```
 
 
 A two species GLV system is evaluated as a ground test of evaluation
@@ -21,6 +109,9 @@ The plan is to create a system with 2 species:
     - Constant perturbation with a specific perturbation time $t_p$ and analyze the recovery to equilibrium
     - Add sin or cos functions as a perturbation 
 - Add a stochastic perturbation and quantificate the effect on the other species.
+
+- Calculate the diversity such as alpha and beta diversity
+- Calculate mutual information and compare them with correlations
 
 
 ```{python}
@@ -37,17 +128,32 @@ DATA_SIMUL = DATA / "simul"
 
 
 ```{python}
-DATA_SIMUL_NONE = DATA_SIMUL / "glv_deter_n_2_traj.h5"
+path_DETER = DATA_SIMUL / "glv_deter_n_2_traj.h5"
 DATA_SIMUL_0 = DATA_SIMUL / "glv_0_0p1_n_2_traj_SingleNoise.h5"
 DATA_SIMUL_1 = DATA_SIMUL / "glv_1_0p1_n_2_traj_SingleNoise.h5"
 DATA_SIMUL_ALL = DATA_SIMUL / "glv_all_0p1_n_2_traj_AllNoise.h5"
-# print(DATA_SIMUL_0, DATA_SIMUL_0.exists())
-# print(DATA_SIMUL_1, DATA_SIMUL_1.exists())
-data_none = load_traj_from_hdf5(DATA_SIMUL_NONE)
+DATA_SIMUL_0_EF = DATA_SIMUL / "glv_0_efs_n_2_traj.h5"
+DATA_SIMUL_1_EF = DATA_SIMUL / "glv_1_efs_n_2_traj.h5"
+DATA_SIMUL_0_NS_0_EF = DATA_SIMUL / "glv_0_efs_ns_n_2_traj_SingleNoise.h5"
+DATA_SIMUL_1_NS_1_EF = DATA_SIMUL / "glv_1_efs_ns_n_2_traj_SingleNoise.h5"
+DATA_SIMUL_EF_0_N_ALL = DATA_SIMUL / "glv_0_efs_na_n_2_traj_AllNoise.h5"
+DATA_SIMUL_EF_1_N_ALL = DATA_SIMUL / "glv_1_efs_na_n_2_traj_AllNoise.h5"
+
+data_deter = load_traj_from_hdf5(path_DETER)
 data_0 = load_traj_from_hdf5(DATA_SIMUL_0)
 data_1 = load_traj_from_hdf5(DATA_SIMUL_1)
 data_all = load_traj_from_hdf5(DATA_SIMUL_ALL)
+data_0_EF = load_traj_from_hdf5(DATA_SIMUL_0_EF)
+data_1_EF = load_traj_from_hdf5(DATA_SIMUL_1_EF)
+data_0_NS_0_EF = load_traj_from_hdf5(DATA_SIMUL_0_NS_0_EF)
+data_1_NS_1_EF = load_traj_from_hdf5(DATA_SIMUL_1_NS_1_EF)
+data_EF_0_N_ALL = load_traj_from_hdf5(DATA_SIMUL_EF_0_N_ALL)
+data_EF_1_N_ALL = load_traj_from_hdf5(DATA_SIMUL_EF_1_N_ALL)
+
 ```
+
+
+
 
 
 
@@ -80,7 +186,7 @@ lbl_y = r"$n_i$"
 
 ```{python}
 fig, ax = plt.subplots()
-ax.plot(data_none["traj"][0] )
+ax.plot(data_deter["traj"][0] )
 ax.set(
     ylim=y_lims,
     xlabel=lbl_x,
@@ -127,10 +233,181 @@ ax.set(
 
 ```
 
+### Species 0 with EF
+
+```{python}
+fig, ax = plt.subplots()
+ax.plot(data_0_EF["traj"][0] )
+ax.set(
+    ylim=y_lims,
+    xlabel=lbl_x,
+    ylabel=lbl_y
+)
+```
+
+
+### Species 1 with EF
+
+```{python}
+fig, ax = plt.subplots()
+ax.plot(data_1_EF["traj"][0] )
+ax.set(
+    ylim=y_lims,
+    xlabel=lbl_x,
+    ylabel=lbl_y
+)
+```
+
+
+### Species 0 with EF + noise
+
+```{python}
+fig, ax = plt.subplots()
+ax.plot(data_0_NS_0_EF["traj"][0] )
+ax.set(
+    ylim=y_lims,
+    xlabel=lbl_x,
+    ylabel=lbl_y
+)
+```
+
+
+### Species 1 with EF + noise
+
+```{python}
+fig, ax = plt.subplots()
+ax.plot(data_1_NS_1_EF["traj"][0] )
+ax.set(
+    ylim=y_lims,
+    xlabel=lbl_x,
+    ylabel=lbl_y
+)
+```
+
+
+
+### Species 0 with EF + noise on all species
+
+```{python}
+fig, ax = plt.subplots()
+ax.plot(data_EF_0_N_ALL["traj"][0] )
+ax.set(
+    ylim=y_lims,
+    xlabel=lbl_x,
+    ylabel=lbl_y
+)
+```
+
+
+
+
+### Species 1 with EF + noise on all species
+
+```{python}
+fig, ax = plt.subplots()
+ax.plot(data_EF_1_N_ALL["traj"][0] )
+ax.set(
+    ylim=y_lims,
+    xlabel=lbl_x,
+    ylabel=lbl_y
+)
+```
+
+
+
 :::
 
 
-## 
+## aaa
+
+
+```{python}
+data_1_NS_1_EF.keys()
+```
+
+```{python}
+import yaml
+import json
+data_1_NS_1_EF['config']['noise']['type']
+```
+
+
+```{python}
+import numpy as np
+tmp_data = data_EF_0_N_ALL["traj"]
+bin_edge_min, bin_edge_max = 0.01, 4
+
+n_trials, T_times, n_species = tmp_data.shape
+
+i_trial = 0
+i_species = 1
+t_time = 4
+
+tmp_data[i_trial, :, i_species]
+tmp_data[:, t_time, i_species]
+
+bins_data = np.linspace(bin_edge_min, bin_edge_max, 100)
+# bins_data = np.log10( np.logspace(bin_edge_min, bin_edge_max, 60) )
+
+dens_data = np.apply_along_axis(
+    lambda x: np.histogram(x, bins=bins_data, density=True)[0],
+    0,
+    tmp_data[:, :, i_species]
+)
+dens_data
+```
+
+
+```{python}
+fig, ax = plt.subplots()
+ax.plot(dens_data[:, :100:10])
+ax.set(
+    yscale="log",
+    # xscale="log",
+    xlim=(2e1, 1e2)
+)
+```
+
+
+
+```{python}
+dens_data.shape
+```
+
+
+```{python}
+tmp_data.shape
+```
+
+```{python}
+dens_data[:, 0].sum()
+```
+
+
+
+```{python}
+tmp_data[:, t_time, i_species]
+```
+
+
+
+```{python}
+import numpy as np
+i_trial = 0
+# np.histogram(data_1_NS_1_EF["traj"][i_trial][0])
+bin_edges, hist = np.histogram(
+    data_1_NS_1_EF["traj"][i_trial][:, 0],
+    density=True
+)
+
+fig, ax = plt.subplots()
+ax.stairs(bin_edges, hist)
+```
+
+
+```{python}
+data_1_NS_1_EF["traj"].shape
+```
 
 
 ```{python}
@@ -150,7 +427,7 @@ data_0["traj"][0][:, 0].mean(), data_0["traj"][0][:, 0].var()
 
 trial = 4
 fig, ax = plt.subplots()
-# ax.plot(data_none["traj"][0][:, 0], data_none["traj"][0][:, 1])
+# ax.plot(data_deter["traj"][0][:, 0], data_deter["traj"][0][:, 1])
 ax.plot(data_0["traj"][trial][:, 0], data_0["traj"][trial][:, 1], 'o', alpha=0.25)
 ax.plot(data_1["traj"][trial][:, 0], data_1["traj"][trial][:, 1], 'o', alpha=0.25)
 ax.plot(data_all["traj"][trial][:, 0], data_all["traj"][trial][:, 1], 'o', alpha=0.25)
@@ -163,6 +440,7 @@ ax.set(
 )
 
 ```
+
 
 
 
