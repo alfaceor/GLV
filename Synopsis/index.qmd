@@ -1,6 +1,14 @@
+---
+description-meta: |
+  This book has as an objective explore the limitations and possible solutions to infer the dynamics of ecological systems and compare mechanistic approaches with deep learning ones.
+---
+
 # Preface {.unnumbered}
 
-## What to write in a Preface
+This is a guide to make stochastic simulations on theoretical ecological systems, with the purpose of acknowledge the limitations on the inference of mechanistic like generalized lotka-volterra or consumer resources models and compare them with scientific deep learning methods with explainability like shap or xai.
+
+
+<!-- ## What to write in a Preface
 
 1. Who are you? (Your background or personal connection to the theme).
 
@@ -9,4 +17,4 @@
 1. How did you do it? (A glimpse into your research process or the journey of writing).
 
 1. Who is this for? (A quick nod to the intended audience).
-
+ -->
