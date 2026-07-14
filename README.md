@@ -1,5 +1,18 @@
-![Build Status](https://github.com/alfaceor/GLV/actions/workflows/ci.yml/badge.svg)
 # GLV Project: Simulation and Inference of Generalized Lotka–Volterra Models
+![Build Status](https://github.com/alfaceor/GLV/actions/workflows/ci.yml/badge.svg)
+[![codecov](https://codecov.io/gh/alfaceor/GLV/branch/main/graph/badge.svg)](https://codecov.io/gh/alfaceor/GLV)
+i[![Python Version](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/)
+
+
+
+## Generalized Lotka=Volterra (GLV)
+
+The human gut microbiota consists of hundreds of interacting species, creating a high-dimensional system where the number of parameters in a Generalized Lotka-Volterra (GLV) model grows quadratically ($N^2$), leading to overfitting and poor identifiability.
+
+While traditional regression methods fail to capture the non-linearities and stochastic nature of these communities, modern machine learning tools like SINDy and Neural ODEs offer a potential solution, yet their performance on ecologically constrained systems remains untested.
+
+This project will establish a comparative framework to determine which dimensionality-reduction and inference techniques best preserve the 'biological truth' of the system while maintaining predictive accuracy under perturbation.
+
 
 ## Overview
 
@@ -57,6 +70,7 @@ pip install -e .
 ```
 
 
+
 ### 3. Build C++ solver (optional but recommended)
 
 <!-- FIXME: TDB if C++ implementation will be in this repo or not  -->
@@ -72,11 +86,27 @@ make
 
 ## Quick Start
 
-Run a simulation
+### Theoretical simulations
+
+To run numerical experiment
 
 ```{bash}
-glv-simulate outputdir=. run_name=expname
+glv-simulate n_species=2 noise=single noise.index=0 noise.std=0.1 extft=none
 ```
+
+by default, this command will generate a simulation with random  a systems with n_species=2, noise=none, extft=none
+
+
+```{bash}
+glv-simulate --multirun n_species=2 noise=single noise.index=0,1 noise.std=0.01,0.05,0.1,0.5 extft=none
+```
+
+
+
+```{bash}
+mlflow ui
+```
+
 
 <!-- TODO: Future implementation of pipeline, to make reproducible using 'make' -->
 
@@ -219,13 +249,6 @@ glv-simulate noise=selected noise.selid='{0:0.1,3:0.9}' noise.default_std=0.5
 
 
 
-# Generalized Lotka=Volterra (GLV)
-
-The human gut microbiota consists of hundreds of interacting species, creating a high-dimensional system where the number of parameters in a Generalized Lotka-Volterra (GLV) model grows quadratically ($N^2$), leading to overfitting and poor identifiability.
-
-While traditional regression methods fail to capture the non-linearities and stochastic nature of these communities, modern machine learning tools like SINDy and Neural ODEs offer a potential solution, yet their performance on ecologically constrained systems remains untested.
-
-This project will establish a comparative framework to determine which dimensionality-reduction and inference techniques best preserve the 'biological truth' of the system while maintaining predictive accuracy under perturbation.
 
 
 ## How to infer the interactions network?
