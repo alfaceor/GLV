@@ -105,7 +105,7 @@ class Config:
         {"noise": "none"},   # declares noise as a swappable group
         {"extft": "single"}
     ])
-    n_species: int = 4
+    n_species: int = 2
     dt: float = 0.01
     steps: int = 50
     n_trials: int = 10
