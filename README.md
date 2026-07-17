@@ -1,7 +1,7 @@
 # GLV Project: Simulation and Inference of Generalized Lotka–Volterra Models
 ![Build Status](https://github.com/alfaceor/GLV/actions/workflows/ci.yml/badge.svg)
 [![codecov](https://codecov.io/gh/alfaceor/GLV/branch/main/graph/badge.svg)](https://codecov.io/gh/alfaceor/GLV)
-i[![Python Version](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/)
+[![Python Version](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/)
 
 
 

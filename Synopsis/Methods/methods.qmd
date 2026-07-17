@@ -1,5 +1,17 @@
 # Methods
 
+In a generalized lotka-volterra system are different regimes given the distribution of the interactions in a quenched system. 
+- So what are the main results that we need to mention?
+-
+
+@glv_2026_Zenari_PRE
+
+@glv_2024_Galla_arXiv
+
+@glv_2017_Bunin_PRE
+
+
+
 ## Plan
 
 - Generate data from inferred lotka-Volterra Models and infer the interactions parameters

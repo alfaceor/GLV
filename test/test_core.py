@@ -7,6 +7,13 @@ from theomodels.core import (
     simulate
 )
 
+from theomodels.core import (  # adjust import to your actual module name
+    relative_abundance,
+    shannon_diversity,
+    kl_divergence,
+    js_divergence,
+)
+
 @pytest.fixture
 def simple_system():
     A = np.array(
@@ -178,4 +185,3 @@ class TestExternalForce:
         dt, steps, n_trials = integration_vars
         F, times = f_t_n_2_cond_02
         assert F.shape == (steps, n_species)
-    

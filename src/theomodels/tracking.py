@@ -4,9 +4,9 @@ import mlflow
 from omegaconf import OmegaConf
 from pathlib import Path
 
-
-TRACKING_URI = "sqlite:///data/mlruns.db"   # rsync this file from cluster
-EXPERIMENT   = "glv_simulations"
+TRACKING_URI = "sqlite:///mlflow.db"   # rsync this file from cluster
+# TRACKING_URI = "sqlite:///data/mlruns.db"   # rsync this file from cluster
+EXPERIMENT   = "glv_sims"  # Generalized lotka-volterra simulations
 
 
 def start_run(cfg) -> mlflow.ActiveRun:
