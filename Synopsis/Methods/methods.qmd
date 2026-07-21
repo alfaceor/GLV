@@ -1,5 +1,10 @@
 # Methods
 
+<!-- Overview -->
+
+To analyze the limitations of the inference on ecological models a evaluation of the inference of a generalized lotka-volterra (GLV) model.
+
+
 In a generalized lotka-volterra system are different regimes given the distribution of the interactions in a quenched system. 
 - So what are the main results that we need to mention?
 -
@@ -9,6 +14,20 @@ In a generalized lotka-volterra system are different regimes given the distribut
 @glv_2024_Galla_arXiv
 
 @glv_2017_Bunin_PRE
+
+
+<!-- Problem formulation -->
+
+<!-- Model -->
+
+Data was generated using GLV simulations
+<!-- Data description -->
+
+<!-- Training procedure -->
+
+<!-- Evaluation metrics -->
+
+<!-- Computational setup -->
 
 
 
