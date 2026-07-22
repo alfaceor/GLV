@@ -410,7 +410,7 @@ class TestExtFT:
         assert cfg.extft.type == "EFAll"
         assert cfg.extft.f0 == 1.0
         assert cfg.extft.psteps == 1
-        assert cfg.n_species == 4
+        assert cfg.n_species == 2
         assert cfg.steps == 50
         device = "cpu"
         f_t = build_extft_all(cfg, device=device)
@@ -436,7 +436,7 @@ class TestExtFT:
         assert cfg.extft.type == "EFSingle"
         assert cfg.extft.f0 == 1.0
         assert cfg.extft.psteps == 1
-        assert cfg.n_species == 4
+        assert cfg.n_species == 2
         assert cfg.steps == 50
         device = "cpu"
         f_t = build_extft_single(cfg, device=device)
