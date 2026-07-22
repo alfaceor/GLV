@@ -7,7 +7,7 @@ from theomodels.core import (
     simulate
 )
 
-from theomodels.core import (  # adjust import to your actual module name
+from theomodels.diversity import (  # adjust import to your actual module name
     relative_abundance,
     shannon_diversity,
     kl_divergence,
