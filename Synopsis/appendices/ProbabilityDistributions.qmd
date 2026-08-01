@@ -281,6 +281,60 @@ P(T_{r} > t) &= P(N_{t} \le r-1) \\
 $$
 
 
+## Levy Distributions and Pareto Tails
+Levy distributions can be viewed as a generalization of the gaussian characteristic function.
+@b_2003_BouchaudPotters_TheoryFinancialRisk
+
+Considering that the characteristic function of a normal distribution with mean zero a variance $\sigma^2$ is:
+
+$$
+\hat{P}(z) = \int \exp(i z x) \frac{1}{\sqrt{2\pi}\sigma^2} 
+\exp \left( -\frac{x^2}{2 \sigma^2} \right)
+= \exp(-z^2 \sigma^2/2)
+$$
+
+
+$$
+L_{\mu} (x) \sim \frac{\mu A_{\pm}^{\mu}}{|x|^{1+\mu}} \text{for } x \to \pm \infty
+$$
+
+where $A_{\pm}^{\mu}$ two constants which we call tail amplitudes or scale parameters.
+
+```{python}
+def Lmu(x, mu, Apm):
+    return mu* Apm**mu/ np.abs(x)**(1+mu)
+
+xx = np.linspace(-3, 3, 100)
+mu = 0.8
+Apm = 1.0
+fig, ax = plt.subplots()
+mu=0.8; ax.plot(xx, Lmu(xx, mu, Apm), label=f"{mu}")
+mu=1.2; ax.plot(xx, Lmu(xx, mu, Apm), label=f"{mu}")
+mu=1.6; ax.plot(xx, Lmu(xx, mu, Apm), label=f"{mu}")
+mu=2.0; ax.plot(xx, Lmu(xx, mu, Apm), label=f"{mu}")
+ax.set_yscale("log")
+ax.legend()
+```
+
+
+There is unfortunately no simple analytical expression for symmetric Levy distributions, except for $\mu=1$, wchich corresponds to a Cauchy distribution (or Lorentzian)
+
+$$
+L_{1}(x) = \frac{A}{x^2 + \pi^2 A^2}
+$$
+
+```{python}
+def L1(x, A):
+    return A/(x**2 + (np.pi**2)*A**2 )
+
+fig, ax = plt.subplots()
+AA=1.0; ax.plot(xx, L1(xx, AA), label=f"{AA}")
+AA=2.0; ax.plot(xx, L1(xx, AA), label=f"{AA}")
+AA=4.0; ax.plot(xx, L1(xx, AA), label=f"{AA}")
+ax.set_yscale("log")
+ax.legend()
+```
+
 ## Calculations
 
 
@@ -341,3 +395,5 @@ plt.legend()
 plt.grid(True, alpha=0.3)
 plt.savefig('peak_comparison_zoom.png')
 ```
+
+
