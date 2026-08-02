@@ -5,8 +5,97 @@ description-meta: |
 
 # Preface {.unnumbered}
 
-This is a guide to make stochastic simulations on theoretical ecological systems, with the purpose of acknowledge the limitations on the inference of mechanistic like generalized lotka-volterra or consumer resources models and compare them with scientific deep learning methods with explainability like shap or xai.
+The prediction of systems with high-levels of complexity and diversity has been a hard endeavor. 
 
+The success of equilibrium statistical mechanics to derive macroscopic thermodynamic observables and emergence phenomena from microscopic degrees of freedom has inspired many approaches to explain the behavior of ecological systems.
+
+
+* a unified framework for far-from-equilibrium systems remains an active area of research.
+
+<!-- like justifications of thermodynamic observations based on the microscopic behavior has been successfully accomplish by equilibrium statistical physics theory, developed by people like Maxwell, Boltzmann, Gibbs, Einstein, Planck, Langevin, among others. -->
+
+:::
+missing:
+- Lars Onsager (non-equilibrium thermodynamics)
+- Ilya Prigogine (dissipative systems)
+- Lev Landau
+- Kenneth Wilson (renormalization)
+  
+:::
+
+
+- active matter
+- glasses
+- turbulence
+- stochastic thermodynamics
+- driven systems
+- reaction-diffusion systems
+- exclusion processes
+- spin glasses
+- biological physics
+- collective motion
+  
+  These are among the most active areas today.  
+  
+  A better statement would be  
+  
+  >   
+  
+  Although equilibrium statistical mechanics is one of the most successful theories in physics, a unified framework for far-from-equilibrium systems remains an active area of research.  
+  
+  That would be historically accurate.  
+  
+
+
+Statistical physics is mostly applied to system that are in thermodynamical equilibrium and the construction of more general theory that captures non-equilibrium problems and with different intensities of interactions remains a challenging theoretical problem. And despite that the direct applications of this theory to ecological problems are cumbersome and maybe unachievable.
+
+
+:::
+Although equilibrium statistical mechanics is one of the most successful theories in physics, a unified framework for far-from-equilibrium systems remains an active area of research.
+:::
+
+
+However, nowadays thanks of the development of stronger computational power, we can explore and attempt to infer the behavior of this kind of systems even without a full comprehension of the most influential factors.
+
+For that reason, I decided to explore how to obtain accurate scientific predictions based on mechanistic simulations and use modern machine learning methods to evaluate the limitations of these approaches, but evaluating the explainability of those using techniques like SHAP, XAI that helps to evaluate which conditions could be most influential under small or large pertubations and predict possible changes in composition and interactions.
+
+
+
+The inference of interactions between components of ecological systems is a long lasting problem in theoretical ecology. How such of systems can remain stable? How can we predict stability under drastic changes or perturbations? Can we predict stable compositional changes?
+
+The author is pretty concern about this questions, but the focus of this document is to be a practical guide to make stochastic simulations on theoretical ecological systems, with the purpose of acknowledge the limitations on the inference of mechanistic like generalized lotka-volterra or consumer resources models and compare them with scientific deep learning methods with explainability like shap or xai.
+
+
+* Modern ecology did not advance solely because computers became faster.
+
+Equally important were
+
+Bayesian inference,
+MCMC,
+variational inference,
+automatic differentiation,
+probabilistic programming,
+deep learning,
+large ecological databases,
+remote sensing,
+high-throughput sequencing.
+
+* modern machine learning often
+
+complements mechanistic understanding.
+
+
+
+
+:::
+Statistical physics teaches that
+
+microscopic interactions generate emergent macroscopic behavior.
+
+Ecology asks
+
+can communities exhibit similarly emergent behavior?
+:::
 
 <!-- ## What to write in a Preface
 

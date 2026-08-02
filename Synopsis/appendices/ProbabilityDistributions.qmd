@@ -282,6 +282,7 @@ $$
 
 
 ## Levy Distributions and Pareto Tails
+
 Levy distributions can be viewed as a generalization of the gaussian characteristic function.
 @b_2003_BouchaudPotters_TheoryFinancialRisk
 

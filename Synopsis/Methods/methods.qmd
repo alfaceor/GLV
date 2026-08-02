@@ -9,12 +9,13 @@ In a generalized lotka-volterra system are different regimes given the distribut
 - So what are the main results that we need to mention?
 -
 
-@glv_2026_Zenari_PRE
+@glv_2026_ZenariFerraroAzaeleMaritanSuweis_PRE
 
 @glv_2024_Galla_arXiv
 
 @glv_2017_Bunin_PRE
 
+@glv_2026_AguilarMunozAzaele_PRX
 
 <!-- Problem formulation -->
 
