@@ -6,23 +6,6 @@
 
 - Improve people's health and well being.
 
-### What are the motivations for this work?
-
- what are the main factors to get a good health? and how to maintain homeostasis[^1]
-
-[^1]: homeostasis comes from two ancient Greek words meaning “equal” and “holding still” then maintain a state of balance or equilibrium.
-
- - 4 pillars of good health:
-    - Nutrition
-    - Physical activity
-    - Sleep
-    - Behavioral health
- <!-- TODO: -->
- - Reduce inequalities social aspect.
-
- - Thermodynamics and life as organic machine:
-    - What is life Schrodinger? @b_1992_ErwinSchrodinger_WhatIsLife
-    - From microscopic to macroscopic observables (Statistical Physics)
 
 ### What is a healthy microbiota?
 

@@ -5,9 +5,35 @@ description-meta: |
 
 # Preface {.unnumbered}
 
-The prediction of systems with high-levels of complexity and diversity has been a hard endeavor. 
 
-The success of equilibrium statistical mechanics to derive macroscopic thermodynamic observables and emergence phenomena from microscopic degrees of freedom has inspired many approaches to explain the behavior of ecological systems.
+### What are the motivations for this work?
+
+
+ what are the main factors to get a good health? and how to maintain homeostasis[^1]?
+
+[^1]: homeostasis comes from two ancient Greek words meaning “equal” and “holding still” then maintain a state of balance or equilibrium.
+
+ - 4 pillars of good health:
+    - Nutrition
+    - Physical activity
+    - Sleep
+    - Behavioral health
+ <!-- TODO: -->
+ - Reduce inequalities social aspect.
+
+ - Thermodynamics and life as organic machine:
+    - What is life Schrodinger? @b_1992_ErwinSchrodinger_WhatIsLife
+    - From microscopic to macroscopic observables (Statistical Physics)
+
+
+The understanding of systems with high levels of complexity and diversity, like microbial ecosystems or financial markets, has been inspired by the success of equilibrium statistical mechanics, where thermodynamic observables have been explained from microscopic descriptions and reasonable assumptions. 
+
+For this reason many efforts have been made to provide statistical and mathematical description to this kind of systems.
+
+Nowadays, with the development of statistical methods and scientific machine learning we would like to evaluate the limitations of common theoretical ecological models to understand the limitations, explore the interpretability and possibly determine better mathematical descriptions.
+
+Hence, the plan of this project is to use popular theoretical models to generate synthetic data, evaluate different regimes to explore the uncertainty of the inferred parameters, and compare what we can translate to interpretability and explainability of these ecological systems.
+
 
 
 * a unified framework for far-from-equilibrium systems remains an active area of research.
