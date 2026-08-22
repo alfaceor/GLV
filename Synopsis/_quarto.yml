@@ -2,8 +2,15 @@ project:
   type: book
   output-dir: ../public
 
+# Global execution settings for ALL formats (HTML and PDF)
+execute:
+  freeze: auto   # Never re-runs code on unchanged files during book renders
+  cache: true    # Caches chunk-level computations in the active file
+  warning: false
+
 book:
-  title: "Synopsis"
+  title: "Microbiome Ecological Modeling"
+  subtitle: "Simulation and Inference"
   author: "Carlos Olivares"
   date: "12/18/2025"
   chapters:
@@ -11,13 +18,18 @@ book:
     # - summary.qmd
     - Introduction/intro.qmd
     # - context.qmd
-    - Methods/methods.qmd
-    # - Methods/inference.qmd
-    # - Methods/simulations.qmd
-    - Results/results.qmd
-    - Results/GLV_regression.qmd
-    # - Results/TwoSpeciesGLVSystem.qmd
-    # - discussion.qmd
+
+    - part: "Methods"
+      chapters:
+        - Methods/methods.qmd
+        # - Methods/inference.qmd
+        # - Methods/simulations.qmd
+    - part: "Results"
+      chapters:
+        - Results/results.qmd
+        - Results/GLV_regression.qmd
+        # - Results/TwoSpeciesGLVSystem.qmd
+        # - discussion.qmd
     - references.qmd
   appendices: 
     - appendices/GIT.qmd
@@ -36,15 +48,10 @@ format:
     theme:
       - cosmo
       - brand
-    execute:
-      # freeze: auto
-      # echo: false
-      warning: false
   pdf:
     documentclass: scrreprt
     execute:
       echo: false
-      warning: false
 
 
 

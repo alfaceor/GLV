@@ -245,7 +245,11 @@ P (T = t) = \lambda e^{-\lambda t}
 $$ {#eq-exponential-pdf}
 
 
+## Student T-distribution
 
+$$
+P_{S} = \frac{1}{\sqrt{\pi}} \Gamma\left( (1+\mu)/2 \right)
+$$
 
 ## Hazard Rate
 
@@ -280,6 +284,15 @@ P(T_{r} > t) &= P(N_{t} \le r-1) \\
 \end{aligned}
 $$
 
+
+
+
+## Inverse Gamma
+
+$$
+P_{\Gamma}(x) = \frac{x_0^{\mu}}{\Gamma(\mu) x^{1+\mu}} 
+\exp \left( -\frac{x_0}{x} \right)
+$$
 
 ## Levy Distributions and Pareto Tails
 
@@ -335,6 +348,22 @@ AA=4.0; ax.plot(xx, L1(xx, AA), label=f"{AA}")
 ax.set_yscale("log")
 ax.legend()
 ```
+
+
+
+## Hyperbolic distribution
+
+Interpolates between a Gaussian body and exponential tails
+
+$$
+P_{H}(x) = \frac{1}{2x_0 K_1(\alpha x_0)} 
+\exp -\left(
+\alpha \sqrt{x_0^2 + x^2}
+\right)
+$$
+
+where $K_1$ is the modified Bessel function of the second kind
+
 
 ## Calculations
 
