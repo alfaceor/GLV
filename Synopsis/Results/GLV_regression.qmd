@@ -1,0 +1,333 @@
+## GLV regression
+
+For simplicity a simple non-linear regression will be used initially to infer the parameters
+
+```{mermaid}
+flowchart TD
+    A[Choose Simulation Parameters] --> B[Generate Synthetic Data]
+    B --> C[Decide Number of Selected Samples]
+    C --> D[Select Inference Methods]
+    
+    D --> E[Linear Regression]
+    D --> F[Non-Linear Regression]
+    D --> G[Neural Networks]
+    D --> H[GNN<br>Graph Neural Networks]
+    D --> I[PINN<br>Physics-Informed Neural Networks]
+    D --> J[Geometry-Informed Neural Networks]
+
+    %% Styling for better readability
+    classDef default fill:#f9f9f9,stroke:#333,stroke-width:2px;
+    classDef startEnd fill:#d4edda,stroke:#28a745,stroke-width:2px;
+    classDef methods fill:#d1ecf1,stroke:#17a2b8,stroke-width:2px;
+    
+    class A startEnd;
+    class E,F,G,H,I,J methods;
+    
+```
+
+
+```{python}
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import numpy as np
+font = {'family': 'normal',
+        'weight': 'bold',
+        'size': 14}
+plt.rc('font', **font)
+plt.rc('text', usetex=True)
+
+from theomodels.io import load_extft_from_hdf5, load_traj_from_hdf5
+from theomodels.paths import DATA
+```
+
+
+```{python}
+PATH_DATA_SIMUL = DATA / "simul"
+
+PATH_ALL_EFS = PATH_DATA_SIMUL / "glv_all_efs_n_2_traj.h5"
+PATH_0_EFS_NA = PATH_DATA_SIMUL / "glv_0_efs_na_n_2_traj_AllNoise.h5"
+PATH_1_EFS_NA = PATH_DATA_SIMUL / "glv_1_efs_na_n_2_traj_AllNoise.h5"
+
+data_0_efs_na = load_traj_from_hdf5(PATH_0_EFS_NA)
+data_1_efs_na = load_traj_from_hdf5(PATH_1_EFS_NA)
+```
+
+
+```{python}
+# data = data_1_efs_na
+```
+
+
+### loading data
+
+```{python}
+data_1_efs_na.keys()
+```
+
+```{python}
+data_1_efs_na["traj"].shape
+i_trial=0
+data_1_efs_na["traj"][i_trial].shape, data_1_efs_na["time"].shape
+```
+
+
+```{python}
+data_1_efs_na["time"]
+```
+
+
+```{python}
+n_trials, n_time, n_species = data_1_efs_na["traj"].shape
+```
+
+
+
+
+```{python}
+# 1. Initialize the plot using subplots
+fig, ax = plt.subplots(figsize=(12, 7))
+
+# 2. Define colors and labels for each of the 4 species
+species_colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728'] # Distinct Hex codes
+species_labels = ['Species 1', 'Species 2', 'Species 3', 'Species 4']
+n_trials2plot = 10
+
+data_traj = data_1_efs_na["traj"]
+data_sys =  data_1_efs_na["traj"]
+time = data_1_efs_na["time"]
+
+# 3. Efficiently plot each species group
+for s in range(n_species):
+    lines = ax.plot(time, data_traj[:n_trials2plot, :-1, s].T, color=species_colors[s], alpha=0.5)
+    lines[0].set_label(species_labels[s])
+```
+
+Ok now we take some sample points every
+
+```{python}
+aaa = 50
+data2infer = data_traj[0, :-1:aaa, :]
+time2infer = time[::aaa]
+data2infer.shape, time2infer.shape
+# time2infer
+```
+
+```{python}
+data_traj[0]
+plt.plot(time2infer, data2infer, 'o')
+
+
+```
+
+
+### loglikelihodd
+<!-- \log{(y-y_{pred} )} -->
+
+$$
+\mathcal{L} = P( \log{y_{pred}} - \log{y} | \mathcal{N}(0, \sigma))
+$$
+
+
+
+
+
+### Fitting with scipy
+
+```{python}
+from scipy.integrate import solve_ivp
+from scipy.optimize import minimize
+
+data_A = data_1_efs_na['system']['A']
+data_r = data_1_efs_na['system']['r']
+data_X0 = data_1_efs_na['system']['X0']
+
+def ode_system(t, X, r, A, tpert=0.2, f_0=-4.0):
+    # f_0 = -4.0
+    f_t = np.zeros_like(r)
+    if t < tpert:
+        f_t[1] = f_0
+    dydt = X * (r + A @ X) + f_t
+    return dydt
+
+sol = solve_ivp(
+        ode_system, 
+        t_span=(time[0], time[-1]), 
+        y0=data_X0, 
+        t_eval=time, 
+        args=(data_r, data_A)
+    )
+
+plt.plot(sol.t, sol.y.T)
+plt.plot(time2infer, data2infer, 'o')
+
+```
+
+
+
+```{python}
+def negative_log_likelihood(params_to_estimate, t_eval, observed_data, y0):
+    # Unpack parameters we are trying to fit
+    # alpha, beta, delta, gamma, sigma = params_to_estimate
+    # data_r, data_A, sigma = params_to_estimate
+    data_r = params_to_estimate[0:2]
+    data_A = params_to_estimate[2:6].reshape(2,2)
+    sigma = params_to_estimate[6]
+    
+    # Boundary constraint: Parameters and noise must be positive
+    # if any(p <= 0 for p in params_to_estimate):
+    #     return np.inf
+    
+    # Solve the ODE with the current parameter guesses
+    sol = solve_ivp(
+        ode_system, 
+        t_span=(time[0], time[-1]), 
+        y0=y0, 
+        t_eval=time, 
+        args=(data_r, data_A) 
+    )
+    
+    # If the ODE solver failed to converge, return a high penalty
+    if not sol.success:
+        return np.inf
+    
+    # Calculate the Negative Log-Likelihood for Gaussian noise
+    # Formula: N * log(sigma) + sum((obs - pred)^2) / (2 * sigma^2)
+    n = observed_data.size
+    residuals = np.log(observed_data) - np.log(sol.y)
+    
+    # FIXME: Change likelihood
+    nll = (n / 2) * np.log(2 * np.pi) + n * np.log(sigma) + np.sum(residuals**2) / (2 * sigma**2)
+    
+    return nll
+```
+
+
+```{python}
+data_A
+```
+```{python}
+# Initial guesses for [alpha, beta, delta, gamma, sigma]
+# Crucial: Must be reasonably close, or optimization can get stuck in local minima
+# initial_guess = [1.0, 0.5, 2.0, 0.5, 0.5] 
+import numpy as np
+nn = 2
+ini_r = np.array([1, 2])
+ini_A = np.eye(2).flatten()
+# ini_A = np.array([-4., -1., -1., -2.])
+ini_sigma = np.array([1.0])
+initial_guess = np.concatenate([ini_r, ini_A])
+initial_guess = np.concatenate([initial_guess, ini_sigma])
+# initial_guess = [ini_r, ini_A]
+
+# Run the optimization
+result = minimize(
+    negative_log_likelihood, 
+    initial_guess, 
+    args=(time2infer, data2infer, data_X0),
+    method='Nelder-Mead' # 'Nelder-Mead' or 'L-BFGS-B' work well for ODEs
+)
+
+# Extract fitted parameters
+fitted_params = result.x
+print("Optimization Successful:", result.success)
+print(f"Fitted alpha, beta, delta, gamma: {fitted_params[:4]}")
+print(f"Estimated noise (sigma): {fitted_params[4]:.4f}")
+```
+
+
+```{python}
+np.log(data2infer)
+data_X0.shape
+```
+
+
+
+```{python}
+time[-1]
+data_1_efs_na["config"]['extft']['psteps']*data_1_efs_na["config"]['dt']
+```
+
+
+```{python}
+fig, ax = plt.subplots()
+ax.plot( data_1_efs_na["traj"][i_trial] )
+# ax.set(
+#     ylim=y_lims,
+#     xlabel=lbl_x,
+#     ylabel=lbl_y
+# )
+
+
+```
+
+
+```{python}
+data_1_efs_na["traj"].shape
+```
+
+
+
+
+$$
+dX_i(t) =
+X_i(t)
+\left(
+r_i + \sum_{j=1}^{n} A_{ij}X_j(t)
+\right)dt
++
+\sigma_i X_i(t), dW_i(t),
+$$
+
+
+where:
+
+* $r_i$ are intrinsic growth rates,
+* $A_{ij}$ are interaction coefficients,
+* $\sigma_i$ are diffusion coefficients,
+* $W_i(t)$ are Wiener processes.
+
+
+Let
+
+$$
+\theta=\{r,A,\sigma\}
+$$
+
+denote all parameters.
+
+
+$$
+\mu_i(x) =
+x_i\left(r_i+\sum_j A_{ij}x_j\right),
+$$
+
+
+and
+
+$$
+g_i(x)=\sigma_i x_i.
+$$
+
+Then
+
+$$
+dX_i=\mu_i(X)dt+g_i(X)dW_i.
+$$
+
+
+
+
+
+```{python}
+import torch
+import torch.nn as nn
+import torch.optim as optim
+np.random.seed(42)
+
+
+```
+
+
+
+
+
